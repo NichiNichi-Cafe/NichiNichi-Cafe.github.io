@@ -13,7 +13,6 @@
     --stone: #8c8278;
     --stone-light: #c4bdb4;
     --matcha: #6b7c5a;
-    --matcha-dark: #4e5c41;
     --matcha-light: #a3b08e;
     --cream: #faf7f0;
   }
@@ -21,6 +20,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
+    height: 100%;
     background: var(--paper);
     color: var(--ink);
     font-family: 'DM Mono', monospace;
@@ -42,12 +42,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: clamp(40px, 8vw, 80px) 24px;
+    padding: 20px 24px;
     position: relative;
     overflow: hidden;
   }
 
-  /* subtle texture on matcha */
   .header::before {
     content: '';
     position: absolute;
@@ -56,88 +55,88 @@
     pointer-events: none;
   }
 
-  /* fade into paper */
   .header::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 60px;
+    height: 40px;
     background: linear-gradient(to bottom, transparent, var(--paper));
   }
 
   .header-kanji {
     font-family: 'Shippori Mincho', serif;
-    font-size: clamp(64px, 16vw, 120px);
-    letter-spacing: 0.15em;
+    font-size: clamp(32px, 8vw, 56px);
+    letter-spacing: 0.2em;
     color: #f4efe4;
     opacity: 0.92;
     line-height: 1;
+    white-space: nowrap;
     position: relative;
     z-index: 1;
     animation: fadeDown 1s ease both;
   }
 
   @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-10px); }
+    from { opacity: 0; transform: translateY(-8px); }
     to   { opacity: 0.92; transform: translateY(0); }
   }
 
   /* ── MAIN ── */
   .main {
-    max-width: 560px;
+    max-width: 480px;
     margin: 0 auto;
-    padding: 32px 28px 80px;
+    padding: 20px 24px 40px;
     text-align: center;
   }
 
   .name {
     font-family: 'Shippori Mincho', serif;
-    font-size: clamp(11px, 2.5vw, 13px);
-    letter-spacing: 5px;
+    font-size: 11px;
+    letter-spacing: 4px;
     text-transform: uppercase;
     color: var(--stone);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     animation: fadeUp 1s 0.2s ease both;
   }
 
   .title {
     font-family: 'Shippori Mincho', serif;
-    font-size: clamp(22px, 5vw, 32px);
-    letter-spacing: 4px;
+    font-size: clamp(20px, 5vw, 28px);
+    letter-spacing: 3px;
     color: var(--ink);
-    margin-bottom: 28px;
+    margin-bottom: 16px;
     animation: fadeUp 1s 0.3s ease both;
   }
 
   .divider {
-    width: 32px;
+    width: 28px;
     height: 1px;
     background: var(--matcha-light);
-    margin: 0 auto 28px;
+    margin: 0 auto 16px;
     animation: fadeUp 1s 0.35s ease both;
   }
 
   .tagline {
     font-family: 'Libre Baskerville', Georgia, serif;
     font-style: italic;
-    font-size: clamp(14px, 2.5vw, 16px);
+    font-size: 13px;
     color: var(--stone);
-    line-height: 1.8;
-    margin-bottom: 6px;
+    line-height: 1.7;
+    margin-bottom: 4px;
     animation: fadeUp 1s 0.4s ease both;
   }
 
   .tagline-de {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--matcha);
     letter-spacing: 1px;
     font-family: 'DM Mono', monospace;
-    margin-bottom: 44px;
+    margin-bottom: 20px;
     animation: fadeUp 1s 0.45s ease both;
   }
 
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
@@ -145,32 +144,32 @@
   .hours {
     background: var(--cream);
     border: 1px solid var(--paper-warm);
-    padding: 22px 28px;
-    margin-bottom: 24px;
+    padding: 14px 20px;
+    margin-bottom: 14px;
     animation: fadeUp 1s 0.5s ease both;
   }
 
   .sec-label {
-    font-size: 8px;
+    font-size: 7px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--stone);
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .hours-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 7px 0;
+    padding: 5px 0;
     border-bottom: 1px solid var(--paper-warm);
-    gap: 24px;
+    gap: 16px;
   }
 
   .hours-row:last-child { border-bottom: none; }
 
   .hours-day {
-    font-size: 10px;
+    font-size: 9px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--stone);
@@ -178,7 +177,7 @@
 
   .hours-time {
     font-family: 'Shippori Mincho', serif;
-    font-size: 16px;
+    font-size: 15px;
     color: var(--ink);
   }
 
@@ -191,32 +190,31 @@
 
   /* ── ADDRESS ── */
   .address {
-    font-size: 10px;
-    letter-spacing: 1.5px;
+    font-size: 9px;
+    letter-spacing: 1px;
     color: var(--stone);
-    line-height: 2.1;
-    margin-bottom: 44px;
+    line-height: 1.9;
+    margin-bottom: 20px;
     animation: fadeUp 1s 0.55s ease both;
   }
 
   /* ── LINKS ── */
   .links {
     display: flex;
-    gap: 14px;
+    gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 48px;
     animation: fadeUp 1s 0.6s ease both;
   }
 
   .link-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 26px;
+    gap: 7px;
+    padding: 11px 22px;
     font-family: 'DM Mono', monospace;
     font-size: 9px;
-    letter-spacing: 2.5px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     text-decoration: none;
     transition: all 0.22s ease;
@@ -228,10 +226,7 @@
     border: 1px solid var(--ink);
   }
 
-  .link-btn-primary:hover {
-    background: var(--matcha);
-    border-color: var(--matcha);
-  }
+  .link-btn-primary:hover { background: var(--matcha); border-color: var(--matcha); }
 
   .link-btn-outline {
     background: transparent;
@@ -242,38 +237,10 @@
   .link-btn-outline:hover { border-color: var(--ink); }
 
   .link-icon {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
     opacity: 0.75;
     flex-shrink: 0;
-  }
-
-  .footer-note {
-    font-size: 8px;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--stone);
-    opacity: 0.45;
-    animation: fadeUp 1s 0.7s ease both;
-  }
-
-  .footer-note span { margin: 0 8px; opacity: 0.4; }
-
-  .season {
-    position: fixed;
-    bottom: 28px;
-    right: 28px;
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--stone);
-    opacity: 0.22;
-    writing-mode: vertical-rl;
-    font-family: 'Shippori Mincho', serif;
-  }
-
-  @media (max-width: 480px) {
-    .season { display: none; }
-    .main { padding: 24px 20px 60px; }
   }
 </style>
 </head>
@@ -332,13 +299,7 @@
     </a>
   </div>
 
-  <p class="footer-note">
-    bar <span>·</span> cash only <span>·</span> kein WC
-  </p>
-
 </main>
-
-<div class="season">日日是好日</div>
 
 </body>
 </html>
