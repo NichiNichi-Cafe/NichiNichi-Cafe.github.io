@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selbstgemacht · NichiNichi Café</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=DM+Mono:wght@300;400&family=Libre+Baskerville:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #171310;
+    --paper: #f4efe4;
+    --paper-warm: #e6decf;
+    --stone: #72685f;
+    --matcha: #738163;
+    --cream: #faf7f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    min-height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+  .main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 24px 56px;
+    text-align: center;
+    position: relative;
+  }
+  .lang-switch {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--stone);
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 4px 2px;
+    border-bottom: 1px solid transparent;
+  }
+  .lang-btn.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .lang-divider { color: #b7aea4; font-size: 10px; }
+
+  .name {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 8px;
+  }
+  .page-title {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-style: italic;
+    font-size: clamp(22px, 4.8vw, 30px);
+    color: var(--stone);
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+  .divider {
+    width: 28px;
+    height: 1px;
+    background: #9daa8f;
+    margin: 0 auto 24px;
+  }
+  .moment-photo {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--paper-warm);
+    margin-bottom: 14px;
+    background: var(--cream);
+  }
+  .text {
+    max-width: 34rem;
+    margin: 0 auto 28px;
+    font-size: 13px;
+    letter-spacing: 0.35px;
+    line-height: 2;
+    color: #5f564e;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 13px 22px;
+    min-height: 46px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid #b7aea4;
+    background: transparent;
+  }
+  .back-link:hover { border-color: var(--ink); }
+  @media (max-width: 600px) {
+    .main { padding: 18px 18px 40px; }
+    .name { font-size: 10px; letter-spacing: 3.5px; }
+    .page-title { font-size: clamp(20px, 6vw, 26px); margin-bottom: 12px; }
+    .text { font-size: 14px; line-height: 1.9; }
+    .back-link { width: 100%; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<main class="main">
+  <div class="lang-switch" aria-label="Sprache wählen">
+    <button type="button" class="lang-btn active" data-lang-btn="de">DE</button>
+    <span class="lang-divider">|</span>
+    <button type="button" class="lang-btn" data-lang-btn="en">EN</button>
+  </div>
+
+  <p class="name">NichiNichi Café · Olef</p>
+  <p class="page-title" data-de="Selbstgemacht" data-en="Homemade">Selbstgemacht</p>
+  <div class="divider"></div>
+
+  <img class="moment-photo" src="selbstgemacht1.jpg" alt="Selbstgemacht"><img class="moment-photo" src="selbstgemacht2.jpg" alt="Selbstgemacht">
+
+  <section class="text" data-de="Was hier entsteht, entsteht von Hand." data-en="What comes into being here is made by hand.">
+    Was hier entsteht, entsteht von Hand.
+  </section>
+
+  <a href="index.html" class="back-link" data-de="Zurück" data-en="Back">Zurück</a>
+</main>
+
+<script>
+  const htmlEl = document.documentElement;
+  const buttons = document.querySelectorAll('[data-lang-btn]');
+  const translatable = document.querySelectorAll('[data-de][data-en]');
+
+  function setLanguage(lang) {
+    htmlEl.lang = lang;
+    translatable.forEach((el) => {
+      const val = el.dataset[lang];
+      if (typeof val !== 'undefined') el.innerHTML = val;
+    });
+    buttons.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.langBtn === lang);
+    });
+    const url = new URL(window.location.href);
+    if (lang === 'en') url.searchParams.set('lang', 'en');
+    else url.searchParams.delete('lang');
+    history.replaceState({}, '', url);
+  }
+
+  buttons.forEach((btn) => btn.addEventListener('click', () => setLanguage(btn.dataset.langBtn)));
+  const params = new URLSearchParams(window.location.search);
+  setLanguage(params.get('lang') === 'en' ? 'en' : 'de');
+</script>
+</body>
+</html>
