@@ -1719,3 +1719,37 @@ html {
     font-size: .76em;
   }
 }
+
+
+/* v0.13 — prevent Hero content from expanding beyond the viewport */
+.hero__content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hero h1,
+.hero__lead,
+.hero h1 > [data-lang] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.hero h1 > [data-lang] {
+  display: block;
+}
+
+@media (max-width: 700px) {
+  .hero.is-overflowing .hero-title-line {
+    white-space: normal;
+    max-width: 100%;
+  }
+
+  .hero.is-overflowing h1 > [data-lang] {
+    width: 100%;
+  }
+
+  .hero.is-overflowing .hero__lead {
+    max-width: 100%;
+    overflow-wrap: normal;
+  }
+}
