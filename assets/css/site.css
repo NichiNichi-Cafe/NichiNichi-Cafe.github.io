@@ -1568,3 +1568,66 @@ body {
     line-height: 1.68;
   }
 }
+
+
+/* v0.11 — keep the mobile brand on one line in narrow in-app browsers */
+@media (max-width: 700px) {
+  .site-header__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .brand {
+    grid-column: 1;
+    min-width: 0;
+    gap: 7px;
+    white-space: nowrap;
+  }
+
+  .brand__kanji,
+  .brand__name {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .brand__kanji {
+    font-size: 18px;
+    letter-spacing: .06em;
+  }
+
+  .brand__name {
+    display: inline;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+  }
+
+  .language-switch {
+    grid-column: 2;
+    justify-self: end;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header__inner {
+    gap: 9px;
+  }
+
+  .brand {
+    gap: 5px;
+  }
+
+  .brand__kanji {
+    font-size: 17px;
+    letter-spacing: .04em;
+  }
+
+  .brand__name {
+    font-size: 9.5px;
+    letter-spacing: .055em;
+  }
+
+  .language-button {
+    font-size: 12px;
+  }
+}
