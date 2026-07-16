@@ -200,6 +200,80 @@
       });
     }
 
+
+    function applyResponsiveFallbacks() {
+      const header = document.querySelector(".site-header");
+      const headerInner = document.querySelector(".site-header__inner");
+      const brand = document.querySelector(".brand");
+      const languageSwitch = document.querySelector(".language-switch");
+      const hero = document.querySelector(".hero");
+      const heroHeading = hero?.querySelector("h1");
+      const activeHeroLanguage = heroHeading?.querySelector('[data-lang]:not([hidden])');
+
+      if (header && headerInner && brand && languageSwitch) {
+        header.classList.remove("is-compact", "is-ultra-compact");
+
+        const overlaps = () => {
+          const brandRect = brand.getBoundingClientRect();
+          const languageRect = languageSwitch.getBoundingClientRect();
+          return (
+            headerInner.scrollWidth > headerInner.clientWidth + 1 ||
+            brandRect.right > languageRect.left - 6
+          );
+        };
+
+        if (overlaps()) {
+          header.classList.add("is-compact");
+        }
+
+        if (overlaps()) {
+          header.classList.add("is-ultra-compact");
+        }
+      }
+
+      if (hero && heroHeading && activeHeroLanguage) {
+        hero.classList.remove("is-overflowing");
+
+        const lines = activeHeroLanguage.querySelectorAll(".hero-title-line");
+        const headingRect = heroHeading.getBoundingClientRect();
+        const availableWidth = Math.min(
+          heroHeading.clientWidth,
+          document.documentElement.clientWidth - 40
+        );
+
+        const lineOverflow = Array.from(lines).some(line => {
+          const range = document.createRange();
+          range.selectNodeContents(line);
+          const textWidth = range.getBoundingClientRect().width;
+          range.detach?.();
+          return textWidth > availableWidth + 1;
+        });
+
+        const contentRect = hero.querySelector(".hero__content")?.getBoundingClientRect();
+        const contentOverflow = Boolean(
+          contentRect &&
+          (
+            contentRect.left < -1 ||
+            contentRect.right > document.documentElement.clientWidth + 1 ||
+            headingRect.right > document.documentElement.clientWidth + 1
+          )
+        );
+
+        if (lineOverflow || contentOverflow) {
+          hero.classList.add("is-overflowing");
+        }
+      }
+    }
+
+    let responsiveTimer = null;
+
+    function scheduleResponsiveFallbacks() {
+      window.clearTimeout(responsiveTimer);
+      responsiveTimer = window.setTimeout(() => {
+        window.requestAnimationFrame(applyResponsiveFallbacks);
+      }, 40);
+    }
+
     function setLanguage(language) {
       currentLanguage = language;
       document.documentElement.lang = language;
@@ -217,6 +291,7 @@
 
       updateLocalizedAttributes(language);
       renderStatus();
+      scheduleResponsiveFallbacks();
     }
 
     languageButtons.forEach(button => {
@@ -247,7 +322,15 @@
       if (event.target === lightbox) lightbox.close();
     });
 
+    window.addEventListener("resize", scheduleResponsiveFallbacks, { passive: true });
+    window.addEventListener("orientationchange", scheduleResponsiveFallbacks, { passive: true });
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleResponsiveFallbacks);
+    }
+
     setLanguage(currentLanguage);
+    scheduleResponsiveFallbacks();
   }
 
   if (document.readyState === "loading") {
