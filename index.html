@@ -325,6 +325,10 @@
       const data = await response.json();
 
       if (!data.active || !data.status) return;
+            const openingStatus =
+        document.getElementById("today-status")?.textContent || "";
+
+      if (!/^(Jetzt geöffnet|Open now)/.test(openingStatus)) return;
 
       const box = document.getElementById("public-notice");
       const text = document.getElementById("public-notice-text");
