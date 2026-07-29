@@ -314,5 +314,58 @@
 <button aria-label="Bild schließen" class="lightbox__close" data-aria-label-de="Bild schließen" data-aria-label-en="Close image" type="button">×</button>
 <img alt="" id="lightbox-image" src=""/>
 </dialog>
+  <script>
+(() => {
+  const endpoint =
+    "https://nichinichi-status.fangphaedra.workers.dev/status";
+
+  async function showSeatAlert() {
+    try {
+      const response = await fetch(endpoint, { cache: "no-store" });
+      const data = await response.json();
+
+      if (!data.active || !data.status) return;
+
+      const box = document.getElementById("public-notice");
+      const text = document.getElementById("public-notice-text");
+
+      if (!box || !text) return;
+
+      const language =
+        document.documentElement.lang === "en" ? "en" : "de";
+
+      const locale = language === "en" ? "en-GB" : "de-DE";
+      const label = language === "en" ? "Updated" : "Stand";
+
+      const updated = new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin"
+      }).format(new Date(data.status.updatedAt));
+
+      text.textContent =
+        data.status.messages[language] +
+        " · " +
+        label +
+        ": " +
+        updated;
+
+      box.hidden = false;
+    } catch (_) {
+      /* The normal opening status remains available if this request fails. */
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    showSeatAlert();
+
+    document.querySelectorAll("[data-language]").forEach(button => {
+      button.addEventListener("click", () => {
+        window.setTimeout(showSeatAlert, 0);
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>
