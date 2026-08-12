@@ -107,6 +107,10 @@
       return language === "de" ? `${start}–${end} Uhr` : `${start}–${end}`;
     }
 
+    function slotLabel(slot) {
+      return slot?.kind === "mondstube" ? "Mondstube" : "Café";
+    }
+
     function renderStatus() {
       if (!statusElement || !nextElement) return;
 
@@ -125,9 +129,10 @@
           const nextOpen = findNextOpenDate(todayKey);
 
           if (nextOpen) {
+            const firstSlot = nextOpen.hours[0];
             next = language === "de"
-              ? `Nächster Café-Tag: ${formatDate(nextOpen.key, language)} · ${formatRange(nextOpen.hours[0], language)}`
-              : `Next café opening: ${formatDate(nextOpen.key, language)} · ${formatRange(nextOpen.hours[0], language)}`;
+              ? `Nächste Öffnung: ${formatDate(nextOpen.key, language)} · ${slotLabel(firstSlot)} · ${formatRange(firstSlot, language)}`
+              : `Next opening: ${formatDate(nextOpen.key, language)} · ${slotLabel(firstSlot)} · ${formatRange(firstSlot, language)}`;
           }
         } else {
           const currentSlot = todayHours.find(
@@ -137,27 +142,28 @@
 
           if (currentSlot) {
             status = language === "de"
-              ? `Jetzt geöffnet · bis ${formatTime(currentSlot.end, language)} Uhr`
-              : `Open now · until ${formatTime(currentSlot.end, language)}`;
+              ? `Jetzt geöffnet · ${slotLabel(currentSlot)} · bis ${formatTime(currentSlot.end, language)} Uhr`
+              : `Open now · ${slotLabel(currentSlot)} · until ${formatTime(currentSlot.end, language)}`;
           } else if (futureSlot) {
             status = language === "de"
-              ? `Heute ab ${formatTime(futureSlot.start, language)} Uhr geöffnet`
-              : `Open today from ${formatTime(futureSlot.start, language)}`;
+              ? `${slotLabel(futureSlot)} heute ab ${formatTime(futureSlot.start, language)} Uhr geöffnet`
+              : `${slotLabel(futureSlot)} opens today at ${formatTime(futureSlot.start, language)}`;
           } else {
             status = language === "de" ? "Für heute geschlossen" : "Closed for today";
             const nextOpen = findNextOpenDate(todayKey);
 
             if (nextOpen) {
+              const firstSlot = nextOpen.hours[0];
               next = language === "de"
-                ? `Nächster Café-Tag: ${formatDate(nextOpen.key, language)} · ${formatRange(nextOpen.hours[0], language)}`
-                : `Next café opening: ${formatDate(nextOpen.key, language)} · ${formatRange(nextOpen.hours[0], language)}`;
+                ? `Nächste Öffnung: ${formatDate(nextOpen.key, language)} · ${slotLabel(firstSlot)} · ${formatRange(firstSlot, language)}`
+                : `Next opening: ${formatDate(nextOpen.key, language)} · ${slotLabel(firstSlot)} · ${formatRange(firstSlot, language)}`;
             }
           }
 
           if (!next && !currentSlot) {
             next = language === "de"
-              ? `Regulär ${todayHours.map(slot => formatRange(slot, language)).join(" · ")}`
-              : `Regular hours ${todayHours.map(slot => formatRange(slot, language)).join(" · ")}`;
+              ? `Heute: ${todayHours.map(slot => `${slotLabel(slot)} ${formatRange(slot, language)}`).join(" · ")}`
+              : `Today: ${todayHours.map(slot => `${slotLabel(slot)} ${formatRange(slot, language)}`).join(" · ")}`;
           }
         }
 
@@ -178,12 +184,12 @@
         }
       } catch (_) {
         statusElement.textContent =
-          currentLanguage === "de" ? "Reguläre Café-Zeiten" : "Regular café hours";
+          currentLanguage === "de" ? "Reguläre Öffnungszeiten" : "Regular opening hours";
 
         nextElement.textContent =
           currentLanguage === "de"
-            ? "MO–DI 12–14 Uhr · FR–SO 12–18 Uhr"
-            : "MON–TUE 12:00–14:00 · FRI–SUN 12:00–18:00";
+            ? "CAFÉ: MO–DI 12–14 Uhr · FR–SO 12–18 Uhr · MONDSTUBE: MO–DI 18:30–20:30 Uhr"
+            : "CAFÉ: MON–TUE 12:00–14:00 · FRI–SUN 12:00–18:00 · MONDSTUBE: MON–TUE 18:30–20:30";
       }
     }
 
@@ -199,7 +205,6 @@
         image.alt = language === "en" ? image.dataset.altEn : image.dataset.altDe;
       });
     }
-
 
     function applyResponsiveFallbacks() {
       const header = document.querySelector(".site-header");
