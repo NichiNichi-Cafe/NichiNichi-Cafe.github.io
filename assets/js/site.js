@@ -12,6 +12,26 @@
     const noticeBox = document.getElementById("public-notice");
     const noticeText = document.getElementById("public-notice-text");
 
+    let liveState = {
+      openingExceptions: [],
+      notice: { active: false, notice: null }
+    };
+
+    function ensureDailyNoticeElement() {
+      if (!nextElement) return null;
+      let element = document.getElementById("live-daily-notice");
+      if (element) return element;
+
+      element = document.createElement("p");
+      element.id = "live-daily-notice";
+      element.className = "status-next";
+      element.hidden = true;
+      nextElement.insertAdjacentElement("afterend", element);
+      return element;
+    }
+
+    const dailyNoticeElement = ensureDailyNoticeElement();
+
     function readStoredLanguage() {
       try { return localStorage.getItem("nichinichi-language"); }
       catch (_) { return null; }
@@ -59,8 +79,32 @@
       return new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
     }
 
+    function dynamicSpecialDate(dateKey) {
+      const item = (liveState.openingExceptions || []).find(entry => entry.date === dateKey);
+      if (!item) return null;
+
+      if (item.type === "closed") {
+        return { date: dateKey, closed: true };
+      }
+
+      if (item.type === "special" && Array.isArray(item.periods)) {
+        return {
+          date: dateKey,
+          hours: item.periods.map(period => ({
+            start: period.start,
+            end: period.end,
+            kind: period.kind || "cafe"
+          }))
+        };
+      }
+
+      return null;
+    }
+
     function specialDate(dateKey) {
-      return (config.specialDates || []).find(item => item.date === dateKey) || null;
+      return dynamicSpecialDate(dateKey) ||
+        (config.specialDates || []).find(item => item.date === dateKey) ||
+        null;
     }
 
     function hoursForDate(dateKey) {
@@ -109,6 +153,22 @@
 
     function slotLabel(slot) {
       return slot?.kind === "mondstube" ? "Mondstube" : "Café";
+    }
+
+    function renderDailyNotice() {
+      if (!dailyNoticeElement) return;
+
+      const dynamicNotice = liveState.notice?.active ? liveState.notice.notice : null;
+      const dynamicText = dynamicNotice?.messages?.[currentLanguage];
+
+      if (dynamicText) {
+        dailyNoticeElement.textContent = "✦ " + dynamicText;
+        dailyNoticeElement.hidden = false;
+        return;
+      }
+
+      dailyNoticeElement.hidden = true;
+      dailyNoticeElement.textContent = "";
     }
 
     function renderStatus() {
@@ -182,14 +242,40 @@
         } else if (noticeBox) {
           noticeBox.hidden = true;
         }
+
+        renderDailyNotice();
       } catch (_) {
         statusElement.textContent =
           currentLanguage === "de" ? "Reguläre Öffnungszeiten" : "Regular opening hours";
 
         nextElement.textContent =
           currentLanguage === "de"
-            ? "CAFÉ: MO–DI 12–14 Uhr · FR–SO 12–18 Uhr · MONDSTUBE: MO–DI 18:30–20:30 Uhr"
-            : "CAFÉ: MON–TUE 12:00–14:00 · FRI–SUN 12:00–18:00 · MONDSTUBE: MON–TUE 18:30–20:30";
+            ? "CAFÉ: MO–DI 12–14 Uhr · FR 12–14 Uhr · SA–SO 12–18 Uhr · MONDSTUBE: MO–DI & FR 18–20 Uhr"
+            : "CAFÉ: MON–TUE 12:00–14:00 · FRI 12:00–14:00 · SAT–SUN 12:00–18:00 · MONDSTUBE: MON–TUE & FRI 18:00–20:00";
+
+        renderDailyNotice();
+      }
+    }
+
+    async function loadLiveState() {
+      const endpoint = config.liveStateEndpoint ||
+        "https://nichinichi-status.fangphaedra.workers.dev/state";
+
+      try {
+        const response = await fetch(endpoint, { cache: "no-store" });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (!data || !Array.isArray(data.openingExceptions)) return;
+
+        liveState = {
+          openingExceptions: data.openingExceptions,
+          notice: data.notice || { active: false, notice: null }
+        };
+
+        renderStatus();
+      } catch (_) {
+        /* Static schedule remains the fallback if the live service is unavailable. */
       }
     }
 
@@ -336,6 +422,7 @@
 
     setLanguage(currentLanguage);
     scheduleResponsiveFallbacks();
+    loadLiveState();
   }
 
   if (document.readyState === "loading") {
