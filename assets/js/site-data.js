@@ -9,6 +9,7 @@
   static fallback for longer planned closures if needed.
 */
 window.NICHI_SITE = {
+  calendarSchemaVersion: 1,
   timeZone: "Europe/Berlin",
   liveStateEndpoint: "https://nichinichi-status.fangphaedra.workers.dev/state",
 
@@ -30,6 +31,11 @@ window.NICHI_SITE = {
     ],
     6: [{ start: "12:00", end: "18:00", kind: "cafe" }]
   },
+
+  weeklyActivities: [
+    { weekday: 2, de: "Dienstag · Mother–Daughter Day", en: "Tuesday · Mother–Daughter Day" },
+    { weekday: 6, de: "Samstag · Story Table", en: "Saturday · Story Table" }
+  ],
 
   specialDates: [],
 

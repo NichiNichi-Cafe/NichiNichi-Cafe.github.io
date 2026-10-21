@@ -117,7 +117,13 @@ function normalizePeriods(periods) {
     if (period.start >= period.end) return null;
 
     const kind = period.kind === "mondstube" ? "mondstube" : "cafe";
-    clean.push({ start: period.start, end: period.end, kind });
+    let event;
+    if (period.event != null) {
+      if (!period.event || !["dnd", "other"].includes(period.event.type)) return null;
+      if (typeof period.event.title !== "string" || typeof period.event.description !== "string" || period.event.title.length > 100 || period.event.description.length > 500) return null;
+      event = { type: period.event.type, title: period.event.title.trim(), description: period.event.description.trim() };
+    }
+    clean.push({ start: period.start, end: period.end, kind, ...(event ? { event } : {}) });
   }
 
   clean.sort((a, b) => a.start.localeCompare(b.start));
@@ -161,16 +167,23 @@ async function readLittleNote(env) {
 }
 
 async function readOpeningExceptions(env) {
-  const list = await env.STATUS_KV.list({ prefix: OPENING_PREFIX });
-  const today = berlinDateString();
+  // Keep this month's past dates for the month view; no historic archive.
+  const earliest = berlinDateString().slice(0, 7) + "-01";
+  const keys = [];
+  let cursor;
+  do {
+    const page = await env.STATUS_KV.list({ prefix: OPENING_PREFIX, ...(cursor ? { cursor } : {}) });
+    keys.push(...page.keys);
+    cursor = page.list_complete ? undefined : page.cursor;
+  } while (cursor);
   const entries = [];
 
-  for (const key of list.keys) {
+  for (const key of keys) {
     const value = await env.STATUS_KV.get(key.name, "json");
 
     if (!value || !validDateString(value.date)) continue;
 
-    if (value.date < today) {
+    if (value.date < earliest) {
       await env.STATUS_KV.delete(key.name);
       continue;
     }
@@ -733,6 +746,8 @@ a.button{
       <input id="opening-date" type="date">
     </div>
 
+    <p class="small-note" id="schedule-result" aria-live="polite">正在讀取日期資料…</p>
+    <button class="secondary-button" id="reload-schedule" type="button">載入所選日期</button>
     <button class="secondary-button" id="close-date" type="button">
       將這一天設為休息
     </button>
@@ -750,6 +765,13 @@ a.button{
     </div>
 
     <div class="field">
+      <label for="event-type-1">時段 1 活動（選填）</label>
+      <select id="event-type-1"><option value="">沒有特別活動</option><option value="dnd">D&D</option><option value="other">其他活動</option></select>
+      <label for="event-title-1">活動名稱（不需翻譯）</label><input id="event-title-1" maxlength="100">
+      <label for="event-description-1">活動說明</label><textarea id="event-description-1" maxlength="500"></textarea>
+    </div>
+
+    <div class="field">
       <span class="label">選填 · 時段 2</span>
       <div class="hours-grid">
         <select id="hours-kind-2" aria-label="類型 2">
@@ -761,7 +783,14 @@ a.button{
       </div>
     </div>
 
-    <button class="primary-button secondary-button" id="save-special-hours" type="button">
+    <div class="field">
+      <label for="event-type-2">時段 2 活動（選填）</label>
+      <select id="event-type-2"><option value="">沒有特別活動</option><option value="dnd">D&D</option><option value="other">其他活動</option></select>
+      <label for="event-title-2">活動名稱（不需翻譯）</label><input id="event-title-2" maxlength="100">
+      <label for="event-description-2">活動說明</label><textarea id="event-description-2" maxlength="500"></textarea>
+    </div>
+
+    <button class="primary-button secondary-button" id="save-special-hours" type="button" disabled>
       儲存特殊營業時間
     </button>
 
@@ -855,6 +884,8 @@ a.button{
   </section>
 </main>
 
+<script src="${ORIGIN}/assets/js/site-data.js?v=task004-r042"></script>
+<script src="${ORIGIN}/assets/js/calendar-data.js?v=task004-r042"></script>
 <script>
 (function(){
   "use strict";
@@ -907,10 +938,9 @@ a.button{
   }
 
   function datePlusDays(days){
-    var date = new Date();
-    date.setHours(12,0,0,0);
-    date.setDate(date.getDate()+days);
-    return localDateString(date);
+    var parts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).filter(function(p){return p.type!=="literal";}).map(function(p){return [p.type,p.value];}));
+    var date=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+days));
+    return date.toISOString().slice(0,10);
   }
 
   function formatTime(timestamp){
@@ -1019,6 +1049,8 @@ a.button{
   async function loadExceptions(){
     try{
       var data = await request("/opening-exceptions","GET");
+      if(!Array.isArray(data.exceptions)) throw new Error("Invalid schedule");
+      scheduleEntries = data.exceptions;
       exceptionList.textContent = "";
 
       if(!data.exceptions.length){
@@ -1046,6 +1078,11 @@ a.button{
 
         text.textContent = label;
 
+        var edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "編輯";
+        edit.addEventListener("click",function(){openingDate.value=item.date; loadScheduleDate();});
+        row.appendChild(edit);
         var remove = document.createElement("button");
         remove.type = "button";
         remove.textContent = "刪除";
@@ -1125,6 +1162,9 @@ a.button{
       return;
     }
 
+    if (!scheduleLoaded || loadedScheduleDate !== date) {
+      show("請先載入所選日期。",true); return;
+    }
     var periods = [{start:start1,end:end1,kind:kind1}];
 
     if(start2 || end2){
@@ -1135,6 +1175,11 @@ a.button{
       periods.push({start:start2,end:end2,kind:kind2});
     }
 
+    periods.forEach(function(period,index){
+      var n=index+1, type=document.getElementById("event-type-"+n).value;
+      if(type) period.event={type:type,title:document.getElementById("event-title-"+n).value,description:document.getElementById("event-description-"+n).value};
+    });
+    // One full-day save: changing the evening must preserve the daytime slot.
     show("正在儲存…",false);
     try{
       await request("/opening-exceptions","POST",{
@@ -1297,7 +1342,41 @@ a.button{
   });
   loadLittleNote();
 
+  var scheduleEntries = [], scheduleLoaded = false, loadedScheduleDate = "";
+  var scheduleResult = document.getElementById("schedule-result");
+  async function loadScheduleDate(){
+    scheduleLoaded=false;
+    document.getElementById("save-special-hours").disabled=true;
+    try{
+      if(!window.NICHI_SITE || window.NICHI_SITE.calendarSchemaVersion !== 1 || !window.NICHI_CALENDAR || window.NICHI_CALENDAR.apiVersion !== 1) throw new Error("Missing or stale schedule scripts");
+      var weekly=window.NICHI_SITE.weeklyHours;
+      for(var weekday=0;weekday<7;weekday++){
+        if(!weekly || !Array.isArray(weekly[weekday]) || weekly[weekday].length>2 || weekly[weekday].some(function(p){return !p || !["cafe","mondstube"].includes(p.kind) || typeof p.start!=="string" || typeof p.end!=="string" || p.start>=p.end;}))throw new Error("Invalid weekly schedule");
+      }
+      var data=await request("/opening-exceptions","GET");
+      if(!Array.isArray(data.exceptions))throw new Error("Invalid schedule");
+      var key=openingDate.value;
+      if(key.length !== 10 || Number.isNaN(Date.parse(key + "T12:00:00Z")))throw new Error("Invalid date");
+      var periods=window.NICHI_CALENDAR.periodsFor(key,window.NICHI_SITE,data.exceptions);
+      if(!Array.isArray(periods) || periods.length>2)throw new Error("Unsupported schedule");
+      for(var n=1;n<=2;n++){
+        var period=periods[n-1];
+        document.getElementById("hours-kind-"+n).value=period ? period.kind : (n===1?"cafe":"mondstube");
+        document.getElementById("hours-start-"+n).value=period ? period.start : "";
+        document.getElementById("hours-end-"+n).value=period ? period.end : "";
+        document.getElementById("event-type-"+n).value=period && period.event ? period.event.type : "";
+        document.getElementById("event-title-"+n).value=period && period.event ? period.event.title : "";
+        document.getElementById("event-description-"+n).value=period && period.event ? period.event.description : "";
+      }
+      loadedScheduleDate=key;scheduleLoaded=true;
+      scheduleResult.textContent="已載入整日時間。請保留未變動的時段，再儲存。";
+      document.getElementById("save-special-hours").disabled=false;
+    }catch(error){scheduleResult.textContent="無法載入日期／固定週表。請重新載入；不會儲存空白預設值。";}
+  }
+  openingDate.addEventListener("change",loadScheduleDate);
+  document.getElementById("reload-schedule").addEventListener("click",loadScheduleDate);
   openingDate.value = datePlusDays(0);
+  loadScheduleDate();
 
   var oneHourLater = new Date(Date.now()+60*60*1000);
   noticeCustomExpiry.value =

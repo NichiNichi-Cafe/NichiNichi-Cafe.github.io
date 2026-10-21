@@ -394,6 +394,7 @@
       });
 
       updateLocalizedAttributes(language);
+      window.dispatchEvent(new CustomEvent("nichinichi-language", { detail: language }));
       renderStatus();
       scheduleResponsiveFallbacks();
     }
