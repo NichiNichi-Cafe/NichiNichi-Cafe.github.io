@@ -1707,3 +1707,39 @@ html {
   html.meta-inapp .language-button { font-size: 10px; }
   html.meta-inapp .hero h1 { font-size: 35px; }
 }
+
+/* Dietary information: reuse the site typography and responsive shell. */
+.dietary-page {
+  max-width: 780px;
+}
+
+.dietary-page h1,
+.dietary-page h2 {
+  font-family: "Shippori Mincho", serif;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -.035em;
+}
+
+.dietary-page h1 {
+  margin: 0 0 32px;
+  font-size: clamp(34px, 5vw, 59px);
+}
+
+.dietary-page h2 {
+  margin: 0 0 24px;
+  font-size: clamp(27px, 4vw, 38px);
+}
+
+.dietary-page section + section {
+  margin-top: 56px;
+}
+
+.dietary-page p {
+  margin: 0 0 24px;
+}
+
+.dietary-link {
+  color: var(--matcha-dark);
+  text-underline-offset: .2em;
+}
