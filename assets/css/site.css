@@ -1746,5 +1746,5 @@ html {
 
 /* Persistent note, independent of operational and seating notices. */
 .little-note { padding-block: 0 28px; }
-.little-note h2 { margin: 0 0 10px; font-size: 21px; }
+.little-note h2 { margin: 0 0 10px; font-family: "Shippori Mincho", serif; font-size: 21px; font-weight: 400; }
 .little-note p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
