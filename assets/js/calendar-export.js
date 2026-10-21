@@ -34,9 +34,21 @@
     const closed=orderedDays.filter(day=>!(config.weeklyHours?.[day] || []).length);
     if(closed.length)summary.push(dayNames(closed)+' · '+(de?'Ruhetage':'Closed'));
     const name = new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(snapshot.year,snapshot.monthIndex,1)));
-    const eventDetails=snapshot.days.flatMap(day=>day.periods.filter(p=>p.event).map(p=>day.key+' · '+model.periodLabel(p)+'\n'+model.eventText(p.event,day.key,language).join('\n')));
-    // Every day's exact times remain available as text, including compact-image exceptions.
-    const caption=[name,...summary,...snapshot.days.filter(d=>d.exception).map(d=>d.key+' · '+(d.closed?(de?'Geschlossen':'Closed'):d.periods.map(model.periodLabel).join(' · '))),...(config.weeklyActivities || []).map(a=>a[language]),...eventDetails,'https://nichinichi-cafe.github.io/kalender/'].join('\n\n');
+    const captionDate=key=>new Intl.DateTimeFormat(locale, de
+      ? {day:'2-digit',month:'2-digit',timeZone:'UTC'}
+      : {day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(key+'T12:00:00Z'));
+    const samePeriod=(a,b)=>a.kind===b.kind && a.start===b.start && a.end===b.end;
+    const dateDetails=snapshot.days.filter(day=>day.exception || day.hasEvent).flatMap(day=>{
+      const baseline=config.weeklyHours?.[dayWeekday(day)] || [];
+      const periods=day.periods.filter(p=>p.event || !baseline.some(b=>samePeriod(p,b)));
+      // Include removed/reduced hours when they are the only change to the day.
+      const removed=baseline.some(b=>!day.periods.some(p=>samePeriod(p,b)));
+      if(!day.closed && !periods.length && !removed)return [];
+      const shown=periods.length?periods:day.periods;
+      return [captionDate(day.key)+' · '+(day.closed?(de?'Geschlossen':'Closed'):shown.map(model.periodLabel).join(' · '))+
+        shown.filter(p=>p.event).map(p=>'\n'+model.eventText(p.event,day.key,language).join('\n')).join('')];
+    });
+    const caption=[name,...summary,...(config.weeklyActivities || []).map(a=>a[language]),...dateDetails,'https://nichinichi-cafe.github.io/kalender/'].join('\n\n');
     function draw(format) {
       const square=format==='ig', canvas=document.createElement('canvas');
       canvas.width=square?1080:2480;canvas.height=square?1080:3508;
@@ -126,7 +138,7 @@
       if(!square){
         fy+=49;
         for(const item of config.weeklyActivities || []){text(item[language],48,fy,'21px sans-serif');fy+=30;}
-        if(eventDetails.length || denseDays.length || omittedOpenDays.length){
+        if(snapshot.days.some(day=>day.hasEvent) || denseDays.length || omittedOpenDays.length){
           fy+=16;
           text(de?'Besondere Abende':'Special evenings',48,fy,'bold 24px Georgia');fy+=38;
           // A4 is a noticeboard overview. Full, unbounded event prose lives at the printed URL.

@@ -3,7 +3,7 @@
 Run the offline Worker/model suite from the repository root:
 
 ```
-node --test tests/worker.test.mjs tests/calendar.test.mjs
+node --test tests/worker.test.mjs tests/calendar.test.mjs tests/caption.test.mjs
 ```
 
 For browser integration, make Playwright available to Node, install its Chromium
@@ -26,11 +26,12 @@ markers/types; A4 also includes a concise special-evenings overview. This avoids
 unbounded free text into date squares. Existing deleted past records cannot be
 recovered; there is no past-month event archive.
 
-OW003 export experiment: columns come from nonempty `weeklyHours` days, in
+FINAL OW005 export design: columns come from nonempty `weeklyHours` days, in
 Monday-first order, with wider gaps across omitted weekdays. The public calendar
 stays seven-column. Fixtures explicitly mark Oct 22 special opening, Oct 23
 temporary closure and Oct 26 D&D as TEST data. `fixtures/ow002-export.js` freezes
 the prior renderer for same-data comparison only; the site never loads it.
 The browser harness also writes the seven/five-column side-by-side image at
 full resolution and 390px, plus a standalone 390px preview. This is a comparison
-experiment, not Captain's final design approval or production schedule.
+comparison evidence, not a production schedule. OW008 caption checks cover
+localized dates, one block per date and omission of unchanged non-event slots.
