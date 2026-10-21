@@ -1,7 +1,8 @@
 .calendar-page { padding-block: 48px 64px; }
-.calendar-page h1,.calendar-toolbar h2 { font-family:"Shippori Mincho",serif; font-weight:500; letter-spacing:-.035em; line-height:1.13; }
+.calendar-page h1,.calendar-toolbar h2,.calendar-weekly h2 { font-family:"Shippori Mincho",serif; font-weight:500; letter-spacing:-.035em; line-height:1.13; }
 .calendar-page h1 { margin-block:0 24px; font-size:clamp(34px,5vw,59px); }
 .calendar-hours p { margin:0; }
+.calendar-hours__part { display:inline-block; white-space:nowrap; }
 .calendar-toolbar { display:flex; gap:12px; align-items:center; justify-content:space-between; margin-block:24px 16px; }
 .calendar-toolbar h2 { margin:0; text-align:center; font-size:clamp(20px,3vw,32px); }
 .calendar-toolbar button,.calendar-export button { padding:10px 14px; color:var(--ink); background:var(--paper); border:1px solid var(--stone); cursor:pointer; }
@@ -31,6 +32,7 @@
  .calendar-page { padding-top:28px; }
  .calendar-day { height:72px; padding:8px 2px; }
  .calendar-day strong { font-size:18px; }
+ .calendar-day__marker--closed { font-size:15px; letter-spacing:-.05em; margin-inline:-1px; }
  .calendar-weekday { font-size:12px; }
  .calendar-detail { padding:18px; }
  .calendar-toolbar { gap:6px; }

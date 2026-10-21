@@ -35,7 +35,13 @@
       :ready?''
       :t('Live-Kalenderdaten nicht geladen. Aktivitäten und Ausnahmen können fehlen. Bitte erneut laden.','Live calendar data has not loaded. Events and exceptions may be missing. Please reload.');
     const hours=el('calendar-hours');hours.replaceChildren();
-    for(const line of layout.summary)append(hours,'p',line);
+    for(const line of layout.summary){
+      const row=append(hours,'p','');
+      line.split(' · ').forEach((part,i)=>{
+        if(i)row.appendChild(document.createTextNode(' · '));
+        append(row,'span',part,'calendar-hours__part');
+      });
+    }
     const grid=el('calendar-grid');grid.replaceChildren();
     const tracks=[],positions=[];
     for(const [i,weekday] of layout.columns.entries()){
