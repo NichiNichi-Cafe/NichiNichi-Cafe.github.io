@@ -25,6 +25,7 @@ test('overrides preserve separate cafe/evening periods and seasonal D&D is event
   for(const month of [4,5,6,7,8,9])assert(!model.eventText(event,`2026-${String(month).padStart(2,'0')}-01`,'en').some(t=>t.includes('recommend take-away')));
   assert(!model.eventText({...event,type:'other'},'2026-10-01','de').some(t=>t.includes('Innenraum')));
   assert(model.eventText(event,'2026-10-01','de').includes('D&D-Abend: Der Innenraum ist heute belegt.'));
+  for(const title of ['', 'D&D']) assert(!model.eventText({...event,title},'2026-10-01','en').includes('D&D'));
 });
 
 test('Worker round-trips event metadata, rejects invalid events, and reset preserves schedule',async()=>{

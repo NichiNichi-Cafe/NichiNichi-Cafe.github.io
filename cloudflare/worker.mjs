@@ -790,7 +790,7 @@ a.button{
       <label for="event-description-2">活動說明</label><textarea id="event-description-2" maxlength="500"></textarea>
     </div>
 
-    <button class="primary-button secondary-button" id="save-special-hours" type="button">
+    <button class="primary-button secondary-button" id="save-special-hours" type="button" disabled>
       儲存特殊營業時間
     </button>
 
@@ -884,8 +884,8 @@ a.button{
   </section>
 </main>
 
-<script src="${ORIGIN}/assets/js/site-data.js?v=task004"></script>
-<script src="${ORIGIN}/assets/js/calendar-data.js?v=task004"></script>
+<script src="${ORIGIN}/assets/js/site-data.js?v=task004-r042"></script>
+<script src="${ORIGIN}/assets/js/calendar-data.js?v=task004-r042"></script>
 <script>
 (function(){
   "use strict";
@@ -938,7 +938,9 @@ a.button{
   }
 
   function datePlusDays(days){
-    return window.NICHI_CALENDAR.plusDays(window.NICHI_CALENDAR.berlinToday(),days);
+    var parts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).filter(function(p){return p.type!=="literal";}).map(function(p){return [p.type,p.value];}));
+    var date=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+days));
+    return date.toISOString().slice(0,10);
   }
 
   function formatTime(timestamp){
@@ -1346,12 +1348,17 @@ a.button{
     scheduleLoaded=false;
     document.getElementById("save-special-hours").disabled=true;
     try{
-      if(!window.NICHI_SITE || !window.NICHI_CALENDAR) throw new Error("Missing weekly schedule");
+      if(!window.NICHI_SITE || window.NICHI_SITE.calendarSchemaVersion !== 1 || !window.NICHI_CALENDAR || window.NICHI_CALENDAR.apiVersion !== 1) throw new Error("Missing or stale schedule scripts");
+      var weekly=window.NICHI_SITE.weeklyHours;
+      for(var weekday=0;weekday<7;weekday++){
+        if(!weekly || !Array.isArray(weekly[weekday]) || weekly[weekday].length>2 || weekly[weekday].some(function(p){return !p || !["cafe","mondstube"].includes(p.kind) || typeof p.start!=="string" || typeof p.end!=="string" || p.start>=p.end;}))throw new Error("Invalid weekly schedule");
+      }
       var data=await request("/opening-exceptions","GET");
       if(!Array.isArray(data.exceptions))throw new Error("Invalid schedule");
       var key=openingDate.value;
       if(key.length !== 10 || Number.isNaN(Date.parse(key + "T12:00:00Z")))throw new Error("Invalid date");
       var periods=window.NICHI_CALENDAR.periodsFor(key,window.NICHI_SITE,data.exceptions);
+      if(!Array.isArray(periods) || periods.length>2)throw new Error("Unsupported schedule");
       for(var n=1;n<=2;n++){
         var period=periods[n-1];
         document.getElementById("hours-kind-"+n).value=period ? period.kind : (n===1?"cafe":"mondstube");

@@ -26,7 +26,8 @@
   }
   function eventText(event, key, language) {
     if (!event) return [];
-    const text = [event.title || (event.type === 'dnd' ? 'D&D' : ''), event.description || ''].filter(Boolean);
+    const title = event.title?.trim() || '';
+    const text = [(event.type === 'dnd' && (!title || title === 'D&D')) ? '' : title, event.description || ''].filter(Boolean);
     if (event.type === 'dnd') {
       text.push(language === 'de' ? 'D&D-Abend: Der Innenraum ist heute belegt.' : 'D&D evening: Indoor seating is occupied tonight.');
       const month = Number(key.slice(5,7));
@@ -50,5 +51,5 @@
     return {year:first.getUTCFullYear(),monthIndex:first.getUTCMonth(),offset,rows,days};
   }
   function periodLabel(p) { return `${p.kind === 'mondstube' ? 'Mondstube' : 'Café'} ${p.start}–${p.end}`; }
-  root.NICHI_CALENDAR = {berlinToday,plusDays,periodsFor,eventText,month,periodLabel};
+  root.NICHI_CALENDAR = {apiVersion:1,berlinToday,plusDays,periodsFor,eventText,month,periodLabel};
 })(typeof window === 'undefined' ? globalThis : window);

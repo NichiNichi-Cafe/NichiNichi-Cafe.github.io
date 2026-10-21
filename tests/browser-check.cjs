@@ -37,9 +37,29 @@ await page.locator('#event-type-2').selectOption('dnd');await page.locator('#eve
 await page.waitForFunction(()=>document.querySelector('#result').textContent.includes('已儲存'));
 const stored=JSON.parse(data.get('opening:2026-10-26'));assert.equal(stored.periods.length,2);assert.equal(stored.periods[0].kind,'cafe');assert.equal(stored.periods[1].event.type,'dnd');
 await page.locator('#reload-schedule').click();await page.waitForFunction(()=>!document.querySelector('#save-special-hours').disabled);assert.equal(await page.locator('#event-title-2').inputValue(),'D&D — Bring dice');
+// Edit through the existing date row, then delete and recreate the exception.
+await page.getByRole('button',{name:'編輯',exact:true}).click();
+await page.waitForFunction(()=>!document.querySelector('#save-special-hours').disabled);
+await page.locator('#event-description-2').fill('Edited adventure. <b>Plain text</b>');await page.locator('#save-special-hours').click();
+await page.waitForFunction(()=>document.querySelector('#result').textContent.includes('已儲存'));
+assert(JSON.parse(data.get('opening:2026-10-26')).periods[1].event.description.startsWith('Edited'));
+await page.getByRole('button',{name:'刪除',exact:true}).click();
+await page.waitForFunction(()=>document.querySelector('#result').textContent.includes('已移除'));
+assert.equal(data.has('opening:2026-10-26'),false);
+// Restore test fixture for visual samples; this is an in-memory KV, not production.
+data.set('opening:2026-10-26',JSON.stringify(stored));
 await page.screenshot({path:path.join(output,'task004-cockpit.png'),fullPage:true});
+await page.goto(base+'/kalender/');await page.waitForFunction(()=>!document.querySelector('#export-ig').disabled);
+assert(await page.locator('#calendar-export-tools').isHidden());
+assert.equal(await page.locator('#calendar-message').innerText(),'');
+assert(!(await page.locator('#calendar-weekly').innerText()).includes('Lunch'));
+assert((await page.locator('#calendar-weekly').innerText()).includes('Mother–Daughter Day'));
+// Real keyboard focus check: the hidden skip link appears when tabbed to.
+await page.keyboard.press('Tab');assert.equal(await page.locator('.skip-link').evaluate(e=>e===document.activeElement),true);
+await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>location.hash),'#main');
+await page.screenshot({path:path.join(output,'task004-public.png'),fullPage:true});
 for(const width of [320,390,1440]){
-await page.setViewportSize({width,height:1100});await page.goto(base+'/kalender/');await page.waitForFunction(()=>!document.querySelector('#export-ig').disabled);
+await page.setViewportSize({width,height:1100});await page.goto(base+'/kalender/?export');await page.waitForFunction(()=>!document.querySelector('#export-ig').disabled);
 await page.locator('[data-date="2026-10-26"]').click();
 for(const language of ['de','en','de']){
 await page.locator('[data-language='+language+']').click();assert(await page.locator('#calendar-detail').innerText().then(s=>s.includes(language==='de'?'Von Oktober bis März':'From October to March')));
@@ -64,6 +84,15 @@ while(await page.locator('[data-date]').first().getAttribute('data-date').then(k
 await page.locator('[data-language=en]').click();await page.reload();assert.equal(await page.locator('html').getAttribute('lang'),'en');
 await page.locator('#calendar-prev').click();assert(await page.locator('#export-ig').isDisabled());assert((await page.locator('#calendar-message').innerText()).includes('no event archive'));
 await page.route('**/state',r=>r.abort());await page.reload();assert(await page.locator('#export-ig').isDisabled());
+// Failed or stale shared scripts must keep all-day schedule saves disabled.
+for(const mode of ['missing-data','missing-model','stale-data','stale-model']){
+ const pattern=mode.includes('data')?'https://nichinichi-cafe.github.io/assets/js/site-data.js*':'https://nichinichi-cafe.github.io/assets/js/calendar-data.js*';
+ await page.route(pattern,r=>mode.startsWith('missing')?r.abort():r.fulfill({contentType:'text/javascript',body:mode==='stale-data'?'window.NICHI_SITE={weeklyHours:{}};':'window.NICHI_CALENDAR={apiVersion:0};'}));
+ await page.goto(base+'/admin');await page.locator('#reload-schedule').click();
+ await page.waitForFunction(()=>document.querySelector('#schedule-result').textContent.includes('無法載入'));
+ assert(await page.locator('#save-special-hours').isDisabled());
+ await page.unroute(pattern);
+}
 assert.deepEqual(errors,[]);
 console.log('PASS: Cockpit one-save round trip preserves cafe/evening; 320/390/1440px; DE→EN→DE & persistence; D&D details; safe text; PNG sizes 1080×1080 & 2480×3508; past/offline exports blocked; no JS errors.');
 }finally{if(browser)await browser.close();server.closeAllConnections();server.close();}
