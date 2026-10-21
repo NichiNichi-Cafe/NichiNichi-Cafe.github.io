@@ -1,7 +1,10 @@
 # Gated rollout and recovery — no authorization implied
 
-Both PRs remain drafts. Aria reviews copy/artwork; Zora reviews integration and
-regressions. Captain separately authorizes each merge and production rollout.
+Task 003 (PR #3) and its note/take-away fixes (PR #5) are already live. PR #4
+is now based on main and remains a draft. Preserve PR #5's 18px/400 serif note
+heading, body type, permanent take-away list and Full-status take-away text.
+Aria reviews changed copy/artwork; Zora reviews the integrated diff and regressions.
+Captain separately authorizes the PR #4 merge and production rollout.
 GitHub merging does **not** deploy the Cloudflare Worker.
 
 ## Preparation (read-only)
@@ -11,19 +14,14 @@ Worker source and existing relevant KV records for rollback, and verify the
 existing `STATUS_KV` / `ADMIN_TOKEN` binding names. Do not copy secrets into Git
 or a public document. Stop all Cockpit schedule editing during a deployment.
 
-## Phase 1 — Task 003, only after explicit approval
+## Current release baseline (verify again before any later rollout)
 
-1. Merge PR #3 to main; wait for Pages success and verify the new note container.
-   The old Worker has no `littleNote`, so the new website safely hides it.
-2. Deploy **PR #3's** reviewed Worker to the existing Cloudflare Worker, preserving
-   bindings. Check `/admin`, `/little-note`, `/state`, the existing seating and
-   operational notice paths. Authorized smoke-test changes require Captain's
-   approval; restore the previous note after any test.
-3. Retarget PR #4 to main, inspect the resulting diff and rerun Node/browser
-   tests. If #3 was squash-merged, rebase/reconcile #4 so its diff contains only
-   Task 004. Do not merge #4 merely because its former base branch disappeared.
+PR #5 main commit: `98c038c9d4bfe9b223d0bda3e2b3ac6e4be9c8b5`.
+Worker version: `6c35b3bf-69a9-4efa-b4e4-c763fd6d037a`.
+These identify the previously verified release, not permission to skip fresh
+source/settings/KV backup checks. PR #4 preparation does not deploy either side.
 
-## Phase 2 — Task 004, only after separate approval
+## Task 004 rollout, only after separate approval
 
 1. Merge the reviewed/retested #4. Wait for Pages, then verify the exact
    versioned `site-data.js`, `calendar-data.js`, `calendar-export.js` and public
@@ -35,6 +33,9 @@ or a public document. Stop all Cockpit schedule editing during a deployment.
 3. Load `/admin` fresh on the phone and verify the shared scripts, date preload
    and enabled save state. Verify the active Cloudflare deployment ID matches
    the reviewed source. If a script fails or is stale, save stays disabled.
+   Check `/little-note`, `/status`, `/notice` and the existing note/seat controls
+   still behave as in PR #5. Existing saved Full messages update on next normal
+   publication, not by rewriting records during deployment.
 4. Only with approval for the smoke test: load an ordinary future day, record
    its complete baseline, add D&D to the evening, save once, reload and confirm
    the daytime period, event type/title/description and evening times round-trip.

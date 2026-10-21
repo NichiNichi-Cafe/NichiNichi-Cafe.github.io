@@ -2,6 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture } from './worker-fixture.mjs';
 
+test('full take-away message follows existing seat clear and expiry', async () => {
+  const {request,entries}=fixture();
+  await request('/little-note','POST',{text:'keep note'});
+  await request('/status','POST',{status:'full'});
+  let seat=(await (await request('/status')).json()).status;
+  assert.equal(seat.messages.de,'Zurzeit sind alle verfügbaren Plätze belegt. Take-away ist möglich.');
+  assert.equal(seat.messages.en,'All available seats are currently occupied. Take-away is available.');
+  await request('/status','DELETE');
+  assert.deepEqual(await (await request('/status')).json(),{active:false,status:null});
+  await request('/status','POST',{status:'full'});
+  seat=JSON.parse(entries.get('seat-alert'));seat.expiresAt=Date.now()-1;entries.set('seat-alert',JSON.stringify(seat));
+  assert.deepEqual(await (await request('/status')).json(),{active:false,status:null});
+  assert.equal(entries.has('seat-alert'),false);
+  for(const status of ['indoor-limited','garden-only']){
+    await request('/status','POST',{status});
+    const messages=(await (await request('/status')).json()).status.messages;
+    assert(!messages.de.includes('Take-away'));assert(!messages.en.includes('Take-away'));
+  }
+  assert.equal((await (await request('/little-note')).json()).text,'keep note');
+});
+
 
 test('persistent note overwrites, clears, and is separate from resets', async () => {
   const {request,entries,writes} = fixture();

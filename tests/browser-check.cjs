@@ -149,6 +149,24 @@ for(const mode of ['missing-data','missing-model','stale-data','stale-model']){
  assert(await page.locator('#save-special-hours').isDisabled());
  await page.unroute(pattern);
 }
+// Preserve the deployed PR #5 homepage and independently exercise note save/clear.
+await page.unroute('**/state'); // End the deliberate offline-export scenario above.
+await page.goto(base+'/admin');await page.locator('#little-note').fill('PR5 preservation TEST\n<b>Plain text</b>');
+await page.locator('#save-little-note').click();await page.waitForFunction(()=>document.querySelector('#little-note-result').textContent==='小筆記已儲存。');
+for(const width of [320,390,1440]){
+ await page.setViewportSize({width,height:1000});await page.goto(base+'/');await page.locator('#little-note').waitFor({state:'visible'});
+ for(const language of ['de','en','de']){
+  await page.locator('[data-language='+language+']').click();
+  const styles=await page.evaluate(()=>{const h=getComputedStyle(document.querySelector('.little-note h2')),status=getComputedStyle(document.querySelector('.status-line')),p=getComputedStyle(document.querySelector('#little-note-text'));return {font:h.fontFamily,statusFont:status.fontFamily,size:h.fontSize,weight:h.fontWeight,margin:h.marginBottom,body:p.fontFamily,siteBody:getComputedStyle(document.body).fontFamily};});
+  assert.equal(styles.font,styles.statusFont);assert.equal(styles.size,'18px');assert.equal(styles.weight,'400');assert.equal(styles.margin,'10px');assert.equal(styles.body,styles.siteBody);
+  assert.equal(await page.locator('.before-card ul[data-lang='+language+'] li').nth(2).innerText(),language==='de'?'Take-away jederzeit möglich':'Take-away is always available');
+  assert((await page.locator('#little-note-text').innerText()).includes('<b>Plain text</b>'));assert.equal(await page.locator('#little-note-text b').count(),0);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ }
+ await page.locator('#little-note').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,'main-pr5-preserved-'+width+'.png')});
+}
+await page.goto(base+'/admin');await page.locator('#little-note').fill('');await page.locator('#save-little-note').click();await page.waitForFunction(()=>document.querySelector('#little-note-result').textContent==='小筆記已清除。');
+await page.goto(base+'/');assert(await page.locator('#little-note').isHidden());
 assert.deepEqual(errors,[]);
 console.log('PASS: Cockpit one-save round trip preserves cafe/evening; 320/390/1440px; DE→EN→DE & persistence; D&D details; safe text; PNG sizes 1080×1080 & 2480×3508; past/offline exports blocked; no JS errors.');
 }finally{if(browser)await browser.close();server.closeAllConnections();server.close();}

@@ -30,8 +30,9 @@ Past dates in the current Berlin month are retained for calendar/export
 consistency. Older months are removed as before; there is no historic archive.
 Already deleted old records cannot be reconstructed. All KV list pages are read.
 The live Worker must be upgraded before enabling calendar data entry. Existing
-seating and operational notice APIs remain unchanged. Task 004 is stacked on
-Task 003 so each PR has a separate reviewable scope.
+seating and operational notice APIs remain unchanged. Task 004 is now based on
+main after the deployed Task 003 / PR #5 fixes; its diff contains only the
+calendar work and preserves the note and take-away behavior already in production.
 
 Before go-live, verify actual `STATUS_KV` and secret binding names in Cloudflare,
 review both PRs, and explicitly approve website and Worker rollout separately.

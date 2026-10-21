@@ -32,6 +32,11 @@ stays seven-column. Fixtures explicitly mark Oct 22 special opening, Oct 23
 temporary closure and Oct 26 D&D as TEST data. `fixtures/ow002-export.js` freezes
 the prior renderer for same-data comparison only; the site never loads it.
 The browser harness also writes the seven/five-column side-by-side image at
-full resolution and 390px, plus a standalone 390px preview. This is a comparison
-comparison evidence, not a production schedule. OW008 caption checks cover
+full resolution and 390px, plus a standalone 390px preview. This is comparison
+evidence, not a production schedule. OW008 caption checks cover
 localized dates, one block per date and omission of unchanged non-event slots.
+
+After integrating deployed PR #5 from main, the suite also verifies its Full
+take-away text and existing clear/expiry behavior, 18px/400 serif note heading,
+unchanged body/spacing, bilingual permanent take-away list, and note save/clear
+with literal text in the same isolated Worker/browser environment.

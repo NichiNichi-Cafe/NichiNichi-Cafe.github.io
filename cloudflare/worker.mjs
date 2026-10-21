@@ -17,8 +17,8 @@ const seatMessages = {
     en: "Indoor seating is currently full. Seats are still available in the garden."
   },
   full: {
-    de: "Zurzeit sind alle verfügbaren Plätze belegt.",
-    en: "All available seats are currently occupied."
+    de: "Zurzeit sind alle verfügbaren Plätze belegt. Take-away ist möglich.",
+    en: "All available seats are currently occupied. Take-away is available."
   }
 };
 
