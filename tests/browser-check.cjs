@@ -21,6 +21,10 @@ try{
 browser=await chromium.launch({headless:true,...(process.env.NICHI_BROWSER_CHANNEL?{channel:process.env.NICHI_BROWSER_CHANNEL}:{})});
 const page=await browser.newPage({viewport:{width:390,height:1000},acceptDownloads:true});page.setDefaultTimeout(12000);
 await page.addInitScript(()=>{const NativeDate=Date;window.Date=class extends NativeDate{constructor(...a){super(...(a.length?a:['2026-10-21T12:00:00Z']))}static now(){return new NativeDate('2026-10-21T12:00:00Z').getTime()}};});
+await page.addInitScript(()=>{
+ window.__artText=[];const fill=CanvasRenderingContext2D.prototype.fillText;
+ CanvasRenderingContext2D.prototype.fillText=function(text,...args){window.__artText.push({text:String(text),color:this.fillStyle,font:this.font});return fill.call(this,text,...args);};
+});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/*',async r=>{const url=r.request().url();
 if(url.startsWith('http://127.0.0.1:'))return r.continue();
@@ -72,6 +76,21 @@ for(const [id,w,h] of [['export-ig',1080,1080],['export-a4',2480,3508]]){
 const promise=page.waitForEvent('download');await page.locator('#'+id).click();const download=await promise;const png=path.join(output,'task004-'+id+'.png');await download.saveAs(png);const bytes=fs.readFileSync(png);assert.equal(bytes.readUInt32BE(16),w);assert.equal(bytes.readUInt32BE(20),h);
 assert((await page.locator('#calendar-caption').inputValue()).includes('D&D — Bring dice'));
 }
+const ink=await page.evaluate(()=>window.__artText);
+assert(ink.some(t=>t.text==='ZU' && t.color==='#171310' && t.font.includes('36px')));
+assert(!ink.some(t=>t.text==='Geschlossen'));
+assert(ink.some(t=>t.text==='D&D' && t.color==='#171310' && t.font.includes('28px')));
+assert(ink.some(t=>t.text==='18–20' && t.color==='#171310' && t.font.includes('28px')));
+assert(!(await page.locator('[data-date="2026-10-30"]').getAttribute('aria-label')).includes('Geschlossen'));
+const preview=await browser.newPage({viewport:{width:390,height:390},deviceScaleFactor:1});
+const ig=fs.readFileSync(path.join(output,'task004-export-ig.png')).toString('base64');
+await preview.setContent('<style>html,body{margin:0;width:390px;height:390px;overflow:hidden}img{display:block;width:390px;height:390px}</style><img alt="IG at phone width" src="data:image/png;base64,'+ig+'">');
+await preview.locator('img').evaluate(img=>img.decode());await preview.screenshot({path:path.join(output,'task004-ig-390.png')});await preview.close();
+const enText=await page.evaluate(()=>{
+ window.__artText=[];window.NICHI_CALENDAR_EXPORT(window.NICHI_CALENDAR.month(2026,9,window.NICHI_SITE,[]),window.NICHI_SITE,'en').draw('ig');return window.__artText;
+});
+assert(enText.some(t=>t.text==='Closed' && t.color==='#171310' && t.font.includes('36px')));
+assert(!enText.some(t=>t.text==='ZU'));
 // Exercise four- and six-row exports, not only date arithmetic.
 for(const target of ['2027-02','2027-05']){
  while(await page.locator('[data-date]').first().getAttribute('data-date').then(k=>k.slice(0,7)!==target))await page.locator('#calendar-next').click();
