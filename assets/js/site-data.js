@@ -31,6 +31,12 @@ window.NICHI_SITE = {
     6: [{ start: "12:00", end: "18:00", kind: "cafe" }]
   },
 
+  weeklyActivities: [
+    { weekday: 1, de: "Montag · Lunch Table", en: "Monday · Lunch Table" },
+    { weekday: 2, de: "Dienstag · Mutter-Tochter-Tag", en: "Tuesday · Mother–Daughter Day" },
+    { weekday: 6, de: "Samstag · Story Table", en: "Saturday · Story Table" }
+  ],
+
   specialDates: [],
 
   publicNotice: {
