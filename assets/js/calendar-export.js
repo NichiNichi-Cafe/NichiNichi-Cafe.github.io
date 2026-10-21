@@ -6,33 +6,9 @@
     const locale = de ? 'de-DE' : 'en-GB';
     const shortTime = time => time.replace(/:00$/, '');
     const range = period => `${shortTime(period.start)}–${shortTime(period.end)}`;
-    const weekdays = Array.from({length:7}, (_,i) => new Intl.DateTimeFormat(locale, {
-      weekday:'short', timeZone:'UTC'
-    }).format(new Date(Date.UTC(2026,0,5+i))).replace(/\.$/, ''));
-    const orderedDays = [1,2,3,4,5,6,0];
-    const columns=orderedDays.filter(day=>(config.weeklyHours?.[day] || []).length>0);
+    const {weekdays,orderedDays,columns,breaks,summary}=model.operatingLayout(config,language);
     const dayWeekday=day=>new Date(day.key+'T12:00:00Z').getUTCDay();
     const omittedOpenDays=snapshot.days.filter(day=>!columns.includes(dayWeekday(day)) && !day.closed);
-    function dayNames(days) {
-      const indexes=days.map(day=>orderedDays.indexOf(day)).sort((a,b)=>a-b), groups=[];
-      for(let i=0;i<indexes.length;i++){
-        let end=i;
-        while(end+1<indexes.length && indexes[end+1]===indexes[end]+1)end++;
-        groups.push(weekdays[indexes[i]]+(end>i?'–'+weekdays[indexes[end]]:''));i=end;
-      }
-      return groups.join(', ');
-    }
-    const summary=[];
-    for(const kind of ['cafe','mondstube']){
-      const groups=new Map();
-      for(const day of orderedDays)for(const period of config.weeklyHours?.[day] || []){
-        if(period.kind!==kind)continue;
-        const time=range(period); if(!groups.has(time))groups.set(time,[]);groups.get(time).push(day);
-      }
-      if(groups.size)summary.push((kind==='cafe'?'Café':'Mondstube')+' · '+[...groups].map(([time,days])=>dayNames(days)+' '+time).join(' · '));
-    }
-    const closed=orderedDays.filter(day=>!(config.weeklyHours?.[day] || []).length);
-    if(closed.length)summary.push(dayNames(closed)+' · '+(de?'Ruhetage':'Closed'));
     const name = new Intl.DateTimeFormat(locale,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(snapshot.year,snapshot.monthIndex,1)));
     const captionDate=key=>new Intl.DateTimeFormat(locale, de
       ? {day:'2-digit',month:'2-digit',timeZone:'UTC'}
@@ -85,7 +61,6 @@
       const hintLines=specialHint?lines(specialHint,984,'28px sans-serif'):[];
       const top=Math.max(284,y+36), bottom=square?950-Math.max(0,hintLines.length-1)*32:1050;
       const gap=6,breakGap=28;
-      const breaks=columns.map((d,i)=>i>0 && orderedDays.indexOf(d)-orderedDays.indexOf(columns[i-1])>1);
       const cellW=(984-Math.max(0,columns.length-1)*gap-breaks.filter(Boolean).length*breakGap)/Math.max(1,columns.length);
       const cellH=(bottom-top-(snapshot.rows-1)*gap)/snapshot.rows;
       const columnX=i=>48+i*(cellW+gap)+breaks.slice(0,i+1).filter(Boolean).length*breakGap;

@@ -70,6 +70,22 @@ await page.setViewportSize({width,height:1100});await page.goto(base+'/kalender/
 await page.locator('[data-date="2026-10-26"]').click();
 for(const language of ['de','en','de']){
 await page.locator('[data-language='+language+']').click();assert(await page.locator('#calendar-detail').innerText().then(s=>s.includes(language==='de'?'Von Oktober bis März':'From October to March')));
+assert.equal(await page.locator('.calendar-weekday').count(),5);
+assert.equal(await page.locator('.calendar-day__summary').count(),0);
+assert.equal(await page.locator('#calendar-hours p').count(),3);
+assert.equal((await page.locator('#calendar-grid [data-date="2026-10-26"] .calendar-day__marker').textContent()).trim(),'●');
+assert.equal((await page.locator('#calendar-grid [data-date="2026-10-23"] .calendar-day__marker').textContent()).trim(),language==='de'?'Zu':'Closed');
+assert(await page.locator('.calendar-day__marker--closed').evaluateAll(es=>es.every(e=>e.scrollWidth<=e.clientWidth)),'closure labels fit the smallest cells');
+const closure=await page.locator('.calendar-day__marker--closed').first().evaluate(e=>{const s=getComputedStyle(e);return {size:parseFloat(s.fontSize),font:s.fontFamily,weight:s.fontWeight}});
+assert(closure.size>=(width<=650?15:25));assert(closure.font.includes('Shippori Mincho'));assert.equal(closure.weight,'400');
+assert.deepEqual(await page.locator('.calendar-weekly h2').evaluate(e=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontWeight]}),await page.locator('#calendar-month').evaluate(e=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontWeight]}));
+assert(await page.locator('.calendar-hours__part').evaluateAll(es=>es.every(e=>getComputedStyle(e).whiteSpace==='nowrap'&&e.scrollWidth<=e.clientWidth)),'weekday/time chunks never split');
+const geometry=await page.evaluate(()=>({heights:[...document.querySelectorAll('.calendar-day')].map(e=>e.getBoundingClientRect().height),headers:[...document.querySelectorAll('.calendar-weekday')].map(e=>e.getBoundingClientRect().x)}));
+assert.equal(new Set(geometry.heights).size,1,'all rows have equal cell height');
+assert(geometry.headers[2]-geometry.headers[1]>geometry.headers[3]-geometry.headers[2]+8,'skipped weekdays keep a visible gap');
+assert.equal(await page.locator('#calendar-grid [data-date="2026-10-22"]').count(),0);
+await page.locator('#calendar-special-openings [data-date="2026-10-22"]').click();assert((await page.locator('#calendar-detail').innerText()).includes('Off-column test opening'));
+await page.locator('#calendar-grid [data-date="2026-10-26"]').click();
 assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 assert.equal(await page.locator('#calendar-detail b').count(),0);
 }
@@ -90,7 +106,7 @@ assert(ink.some(t=>t.text.includes('+ Sonderöffnung: 22.10.')));
 assert(ink.some(t=>t.text.includes('22.10.') && t.text.includes('Autumn evening TEST')));
 assert(ink.some(t=>t.text==='nichinichi-cafe.github.io/kalender/' && t.font.includes('28px')));
 assert(ink.some(t=>t.text.startsWith('Café ·') && t.font.includes('30px')));
-assert.equal(await page.locator('.calendar-weekday').count(),7,'public calendar stays seven-column');
+assert.equal(await page.locator('.calendar-weekday').count(),5,'public calendar uses shared operating-day columns');
 assert(ink.some(t=>t.text==='D&D' && t.color==='#171310' && t.font.includes('28px')));
 assert(ink.some(t=>t.text==='18–20' && t.color==='#171310' && t.font.includes('28px')));
 assert(!(await page.locator('[data-date="2026-10-30"]').getAttribute('aria-label')).includes('Geschlossen'));
@@ -177,7 +193,8 @@ for(const width of [320,390,1440]){
   assert.equal(await page.locator('.hours-card > p[data-lang='+language+']').innerText(),language==='de'
    ? 'Kurzfristige Änderungen, Ferien, Sonderabende und wetterbedingte Anpassungen stehen im Status oben und im Monatskalender.'
    : 'Short-notice changes, holidays, special evenings and weather-related adjustments appear in the status above and in the monthly calendar.');
-  assert.equal(await page.locator('.status-strip__grid > a').count(),0);
+  const statusCalendar=page.locator('.status-strip__grid > a');assert.equal(await statusCalendar.count(),1);assert.equal(await statusCalendar.getAttribute('href'),'kalender/');assert.equal(await statusCalendar.getAttribute('target'),null);
+  assert.equal((await statusCalendar.locator('[data-lang='+language+']').textContent()).trim(),language==='de'?'Monatskalender →':'Monthly calendar →');
   assert.equal(styles.font,styles.statusFont);assert.equal(styles.size,'18px');assert.equal(styles.weight,'400');assert.equal(styles.margin,'10px');assert.equal(styles.body,styles.siteBody);
   assert.equal(await page.locator('.before-card ul[data-lang='+language+'] li').nth(2).innerText(),language==='de'?'Take-away jederzeit möglich':'Take-away is always available');
   assert((await page.locator('#little-note-text').innerText()).includes('<b>Plain text</b>'));assert.equal(await page.locator('#little-note-text b').count(),0);

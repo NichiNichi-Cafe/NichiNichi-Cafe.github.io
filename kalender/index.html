@@ -4,10 +4,10 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&amp;family=Libre+Baskerville:ital@0;1&amp;family=Shippori+Mincho:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
 <title>Kalender · NichiNichi Café</title><link rel="canonical" href="https://nichinichi-cafe.github.io/kalender/">
-<link rel="stylesheet" href="/assets/css/site.css?v=task004-r042"><link rel="stylesheet" href="/assets/css/calendar.css?v=task004-r042">
-<script defer src="/assets/js/site-data.js?v=task004-r042"></script><script defer src="/assets/js/calendar-data.js?v=task004-r042"></script>
-<script defer src="/assets/js/site.js?v=task004-r042"></script><script defer src="/assets/js/calendar-export.js?v=task004-ow008"></script>
-<script defer src="/assets/js/calendar.js?v=task004-r042"></script>
+<link rel="stylesheet" href="/assets/css/site.css?v=task004-r042"><link rel="stylesheet" href="/assets/css/calendar.css?v=ow025">
+<script defer src="/assets/js/site-data.js?v=task004-r042"></script><script defer src="/assets/js/calendar-data.js?v=ow025"></script>
+<script defer src="/assets/js/site.js?v=task004-r042"></script><script defer src="/assets/js/calendar-export.js?v=ow025"></script>
+<script defer src="/assets/js/calendar.js?v=ow025"></script>
 </head><body class="calendar-site"><a class="skip-link" href="#main"><span data-lang="de">Zum Inhalt</span><span data-lang="en" hidden>Skip to content</span></a><header class="site-header">
 <div class="site-header__inner shell">
 <a aria-label="NichiNichi Startseite" class="brand" data-aria-label-de="NichiNichi Startseite" data-aria-label-en="NichiNichi home" href="/">
@@ -31,11 +31,12 @@
 <main class="shell calendar-page" id="main">
 <p class="section-kicker">NichiNichi Café · Mondstube</p>
 <h1><span data-lang="de">Kalender</span><span data-lang="en" hidden>Calendar</span></h1>
-<p><span data-lang="de">Öffnungszeiten und besondere Abende. Aktuelle Sitzplatz-Hinweise und kurzfristige Meldungen findest du auf der Startseite.</span><span data-lang="en" hidden>Opening hours and special evenings. Check the homepage for live seating updates and short-notice announcements.</span> <a href="/"><span data-lang="de">Zur Startseite</span><span data-lang="en" hidden>Homepage</span></a></p>
+<div class="calendar-hours" id="calendar-hours"></div>
 <p class="calendar-message" id="calendar-message" role="status"></p>
 <div class="calendar-toolbar"><button id="calendar-prev" type="button" aria-label="Vorheriger Monat" data-aria-label-de="Vorheriger Monat" data-aria-label-en="Previous month">←</button><h2 id="calendar-month" aria-live="polite"></h2><button id="calendar-next" type="button" aria-label="Nächster Monat" data-aria-label-de="Nächster Monat" data-aria-label-en="Next month">→</button></div>
-<p><span data-lang="de">● Aktivität · × Geschlossen · ◇ Geänderte Zeiten. Datum auswählen für Details.</span><span data-lang="en" hidden>● Event · × Closed · ◇ Changed hours. Select a date for details.</span></p>
+<p><span data-lang="de">Für Details ein Datum auswählen.</span><span data-lang="en" hidden>Select a date for details.</span></p>
 <div class="calendar-grid" id="calendar-grid" role="group" aria-label="Kalender" data-aria-label-de="Kalender" data-aria-label-en="Calendar"></div>
+<div class="calendar-special-openings" id="calendar-special-openings"></div>
 <section class="calendar-detail" id="calendar-detail" aria-live="polite"></section>
 <section class="calendar-weekly"><h2><span data-lang="de">Regelmäßig bei NichiNichi</span><span data-lang="en" hidden>Regularly at NichiNichi</span></h2><ul id="calendar-weekly"></ul></section>
 <section id="calendar-export-tools" hidden>
