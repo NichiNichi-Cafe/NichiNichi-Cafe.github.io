@@ -23,7 +23,7 @@ const page=await browser.newPage({viewport:{width:390,height:1000},acceptDownloa
 await page.addInitScript(()=>{const NativeDate=Date;window.Date=class extends NativeDate{constructor(...a){super(...(a.length?a:['2026-10-21T12:00:00Z']))}static now(){return new NativeDate('2026-10-21T12:00:00Z').getTime()}};});
 await page.addInitScript(()=>{
  window.__artText=[];const fill=CanvasRenderingContext2D.prototype.fillText;
- CanvasRenderingContext2D.prototype.fillText=function(text,...args){window.__artText.push({text:String(text),color:this.fillStyle,font:this.font});return fill.call(this,text,...args);};
+ CanvasRenderingContext2D.prototype.fillText=function(text,...args){window.__artText.push({text:String(text),color:this.fillStyle,font:this.font,x:args[0],y:args[1]});return fill.call(this,text,...args);};
 });
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/*',async r=>{const url=r.request().url();
@@ -52,6 +52,9 @@ await page.waitForFunction(()=>document.querySelector('#result').textContent.inc
 assert.equal(data.has('opening:2026-10-26'),false);
 // Restore test fixture for visual samples; this is an in-memory KV, not production.
 data.set('opening:2026-10-26',JSON.stringify(stored));
+// OW003 visual fixtures, never production: Friday closure and Thursday special opening.
+data.set('opening:2026-10-23',JSON.stringify({date:'2026-10-23',type:'closed',periods:[]}));
+data.set('opening:2026-10-22',JSON.stringify({date:'2026-10-22',type:'special',periods:[{kind:'mondstube',start:'17:00',end:'19:00',event:{type:'other',title:'Autumn evening TEST',description:'Off-column test opening'}}]}));
 await page.screenshot({path:path.join(output,'task004-cockpit.png'),fullPage:true});
 await page.goto(base+'/kalender/');await page.waitForFunction(()=>!document.querySelector('#export-ig').disabled);
 assert(await page.locator('#calendar-export-tools').isHidden());
@@ -77,8 +80,17 @@ const promise=page.waitForEvent('download');await page.locator('#'+id).click();c
 assert((await page.locator('#calendar-caption').inputValue()).includes('D&D — Bring dice'));
 }
 const ink=await page.evaluate(()=>window.__artText);
-assert(ink.some(t=>t.text==='ZU' && t.color==='#171310' && t.font.includes('36px')));
-assert(!ink.some(t=>t.text==='Geschlossen'));
+assert(ink.some(t=>t.text==='Zu' && t.color==='#171310' && t.font.includes('38px') && t.font.includes('Georgia')));
+assert(!ink.some(t=>t.text==='Geschlossen' || t.text==='ZU'));
+assert(!ink.some(t=>t.text==='MI' || t.text==='DO'));
+const headers=ink.filter(t=>['MO','DI','FR','SA','SO'].includes(t.text)).slice(0,5);
+assert.deepEqual(headers.map(t=>t.text),['MO','DI','FR','SA','SO']);
+assert(headers[2].x-headers[1].x>headers[3].x-headers[2].x+20,'visible break between Tue and Fri');
+assert(ink.some(t=>t.text.includes('+ Sonderöffnung: 22.10.')));
+assert(ink.some(t=>t.text.includes('22.10.') && t.text.includes('Autumn evening TEST')));
+assert(ink.some(t=>t.text==='nichinichi-cafe.github.io/kalender/' && t.font.includes('28px')));
+assert(ink.some(t=>t.text.startsWith('Café ·') && t.font.includes('30px')));
+assert.equal(await page.locator('.calendar-weekday').count(),7,'public calendar stays seven-column');
 assert(ink.some(t=>t.text==='D&D' && t.color==='#171310' && t.font.includes('28px')));
 assert(ink.some(t=>t.text==='18–20' && t.color==='#171310' && t.font.includes('28px')));
 assert(!(await page.locator('[data-date="2026-10-30"]').getAttribute('aria-label')).includes('Geschlossen'));
@@ -87,10 +99,35 @@ const ig=fs.readFileSync(path.join(output,'task004-export-ig.png')).toString('ba
 await preview.setContent('<style>html,body{margin:0;width:390px;height:390px;overflow:hidden}img{display:block;width:390px;height:390px}</style><img alt="IG at phone width" src="data:image/png;base64,'+ig+'">');
 await preview.locator('img').evaluate(img=>img.decode());await preview.screenshot({path:path.join(output,'task004-ig-390.png')});await preview.close();
 const enText=await page.evaluate(()=>{
- window.__artText=[];window.NICHI_CALENDAR_EXPORT(window.NICHI_CALENDAR.month(2026,9,window.NICHI_SITE,[]),window.NICHI_SITE,'en').draw('ig');return window.__artText;
+ window.__artText=[];window.NICHI_CALENDAR_EXPORT(window.NICHI_CALENDAR.month(2026,9,window.NICHI_SITE,[{date:'2026-10-23',type:'closed',periods:[]}]),window.NICHI_SITE,'en').draw('ig');return window.__artText;
 });
-assert(enText.some(t=>t.text==='Closed' && t.color==='#171310' && t.font.includes('36px')));
-assert(!enText.some(t=>t.text==='ZU'));
+assert(enText.some(t=>t.text==='Closed' && t.color==='#171310' && t.font.includes('38px') && t.font.includes('Georgia')));
+assert(!enText.some(t=>t.text==='Zu' || t.text==='ZU'));
+// Same data, frozen OW002 seven-column vs current five-column renderer.
+await page.addScriptTag({path:path.join(root,'tests/fixtures/ow002-export.js')});
+const comparison=await page.evaluate(exceptions=>{
+ const snap=window.NICHI_CALENDAR.month(2026,9,window.NICHI_SITE,exceptions);
+ const old=window.NICHI_CALENDAR_EXPORT_OW002(snap,window.NICHI_SITE,'de').draw('ig');
+ const next=window.NICHI_CALENDAR_EXPORT(snap,window.NICHI_SITE,'de').draw('ig');
+ const c=document.createElement('canvas');c.width=2160;c.height=1140;const ctx=c.getContext('2d');
+ ctx.fillStyle='#f4f0e7';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#171310';ctx.font='38px Georgia';
+ ctx.fillText('OW002 · 7 Spalten',48,44);ctx.fillText('OW003 · 5 Spalten · TEST',1128,44);
+ ctx.drawImage(old,0,60);ctx.drawImage(next,1080,60);
+ return {old:old.toDataURL('image/png'),comparison:c.toDataURL('image/png')};
+},[...data.entries()].filter(([k])=>k.startsWith('opening:')).map(([,v])=>JSON.parse(v)));
+const saveData=(name,url)=>fs.writeFileSync(path.join(output,name),Buffer.from(url.split(',')[1],'base64'));
+saveData('ow003-seven-column-same-data.png',comparison.old);saveData('ow003-comparison-full.png',comparison.comparison);
+const pair=await browser.newPage({viewport:{width:390,height:206},deviceScaleFactor:1});
+await pair.setContent('<style>html,body{margin:0;width:390px;height:206px;overflow:hidden}img{display:block;width:390px;height:auto}</style><img src="'+comparison.comparison+'">');
+await pair.locator('img').evaluate(img=>img.decode());await pair.screenshot({path:path.join(output,'ow003-comparison-390.png')});await pair.close();
+// Column set follows configuration rather than hardcoded weekdays.
+const dynamic=await page.evaluate(()=>{
+ const config=structuredClone(window.NICHI_SITE);config.weeklyHours[3]=[{kind:'cafe',start:'12:00',end:'14:00'}];
+ window.__artText=[];window.NICHI_CALENDAR_EXPORT(window.NICHI_CALENDAR.month(2026,9,config,[]),config,'de').draw('ig');
+ return window.__artText;
+});
+assert(dynamic.some(t=>t.text==='MI'));assert(!dynamic.some(t=>t.text==='DO'));
+assert(!dynamic.some(t=>t.text==='Zu'),'no closure legend when no temporary closure exists');
 // Exercise four- and six-row exports, not only date arithmetic.
 for(const target of ['2027-02','2027-05']){
  while(await page.locator('[data-date]').first().getAttribute('data-date').then(k=>k.slice(0,7)!==target))await page.locator('#calendar-next').click();
