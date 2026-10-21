@@ -1743,3 +1743,8 @@ html {
   color: var(--matcha-dark);
   text-underline-offset: .2em;
 }
+
+/* Persistent note, independent of operational and seating notices. */
+.little-note { padding-block: 0 28px; }
+.little-note h2 { margin: 0 0 10px; font-size: 21px; }
+.little-note p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }

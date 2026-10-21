@@ -14,7 +14,8 @@
 
     let liveState = {
       openingExceptions: [],
-      notice: { active: false, notice: null }
+      notice: { active: false, notice: null },
+      littleNote: ""
     };
 
     function ensureDailyNoticeElement() {
@@ -171,6 +172,15 @@
       dailyNoticeElement.textContent = "";
     }
 
+    function renderLittleNote() {
+      const box = document.getElementById("little-note");
+      const text = document.getElementById("little-note-text");
+      if (!box || !text) return;
+      const note = typeof liveState.littleNote === "string" ? liveState.littleNote.trim() : "";
+      text.textContent = note;
+      box.hidden = !note;
+    }
+
     function renderStatus() {
       if (!statusElement || !nextElement) return;
 
@@ -244,6 +254,7 @@
         }
 
         renderDailyNotice();
+        renderLittleNote();
       } catch (_) {
         statusElement.textContent =
           currentLanguage === "de" ? "Reguläre Öffnungszeiten" : "Regular opening hours";
@@ -254,6 +265,7 @@
             : "CAFÉ: MON–TUE 12:00–14:00 · FRI 12:00–14:00 · SAT–SUN 12:00–18:00 · MONDSTUBE: MON–TUE & FRI 18:00–20:00";
 
         renderDailyNotice();
+        renderLittleNote();
       }
     }
 
@@ -270,7 +282,8 @@
 
         liveState = {
           openingExceptions: data.openingExceptions,
-          notice: data.notice || { active: false, notice: null }
+          notice: data.notice || { active: false, notice: null },
+          littleNote: typeof data.littleNote === "string" ? data.littleNote : ""
         };
 
         renderStatus();
