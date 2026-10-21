@@ -5,6 +5,17 @@ import { fixture } from './worker-fixture.mjs';
 const model=globalThis.NICHI_CALENDAR;
 const config={weeklyHours:{1:[{start:'12:00',end:'14:00',kind:'cafe'},{start:'18:00',end:'20:00',kind:'mondstube'}]}};
 
+test('shared operating layout derives columns, skipped-day gaps and bilingual hours',()=>{
+  const hours={weeklyHours:{1:config.weeklyHours[1],2:config.weeklyHours[1],5:config.weeklyHours[1],6:[{kind:'cafe',start:'12:00',end:'18:00'}],0:[{kind:'cafe',start:'12:00',end:'18:00'}]}};
+  const de=model.operatingLayout(hours,'de'),en=model.operatingLayout(hours,'en');
+  assert.deepEqual(de.columns,[1,2,5,6,0]);assert.deepEqual(de.breaks,[false,false,true,false,false]);
+  assert.deepEqual(de.summary,['Café · Mo–Di, Fr 12–14 · Sa–So 12–18','Mondstube · Mo–Di, Fr 18–20','Mi–Do · Ruhetage']);
+  assert.deepEqual(en.summary,['Café · Mon–Tue, Fri 12–14 · Sat–Sun 12–18','Mondstube · Mon–Tue, Fri 18–20','Wed–Thu · Closed']);
+  const changed=structuredClone(hours);changed.weeklyHours[3]=[{kind:'cafe',start:'12:30',end:'15:00'}];
+  const layout=model.operatingLayout(changed,'en');assert.deepEqual(layout.columns,[1,2,3,5,6,0]);assert.deepEqual(layout.breaks,[false,false,false,true,false,false]);assert(layout.summary[0].includes('Wed 12:30–15'));
+  assert.deepEqual(model.operatingLayout({weeklyHours:{}},'de').columns,[]);
+});
+
 test('Monday-first month geometry includes four, five and six rows and leap day',()=>{
   assert.equal(model.month(2021,1,config,[]).rows,4);
   assert.equal(model.month(2026,9,config,[]).rows,5);

@@ -51,5 +51,34 @@
     return {year:first.getUTCFullYear(),monthIndex:first.getUTCMonth(),offset,rows,days};
   }
   function periodLabel(p) { return `${p.kind === 'mondstube' ? 'Mondstube' : 'Café'} ${p.start}–${p.end}`; }
-  root.NICHI_CALENDAR = {apiVersion:1,berlinToday,plusDays,periodsFor,eventText,month,periodLabel};
+  // One weekly layout/summary for both the page and unchanged IG/A4 artwork.
+  function operatingLayout(config, language) {
+    const de=language==='de', locale=de?'de-DE':'en-GB';
+    const orderedDays=[1,2,3,4,5,6,0];
+    const weekdays=orderedDays.map((_,i)=>new Intl.DateTimeFormat(locale,{weekday:'short',timeZone:'UTC'}).format(new Date(Date.UTC(2026,0,5+i))).replace(/\.$/,''));
+    const columns=orderedDays.filter(day=>(config.weeklyHours?.[day] || []).length>0);
+    const breaks=columns.map((d,i)=>i>0 && orderedDays.indexOf(d)-orderedDays.indexOf(columns[i-1])>1);
+    function dayNames(days) {
+      const indexes=days.map(day=>orderedDays.indexOf(day)).sort((a,b)=>a-b),groups=[];
+      for(let i=0;i<indexes.length;i++){
+        let end=i;while(end+1<indexes.length && indexes[end+1]===indexes[end]+1)end++;
+        groups.push(weekdays[indexes[i]]+(end>i?'–'+weekdays[indexes[end]]:''));i=end;
+      }
+      return groups.join(', ');
+    }
+    const summary=[];
+    for(const kind of ['cafe','mondstube']){
+      const groups=new Map();
+      for(const day of orderedDays)for(const period of config.weeklyHours?.[day] || []){
+        if(period.kind!==kind)continue;
+        const time=period.start.replace(/:00$/,'')+'–'+period.end.replace(/:00$/,'');
+        if(!groups.has(time))groups.set(time,[]);groups.get(time).push(day);
+      }
+      if(groups.size)summary.push((kind==='cafe'?'Café':'Mondstube')+' · '+[...groups].map(([time,days])=>dayNames(days)+' '+time).join(' · '));
+    }
+    const closed=orderedDays.filter(day=>!(config.weeklyHours?.[day] || []).length);
+    if(closed.length)summary.push(dayNames(closed)+' · '+(de?'Ruhetage':'Closed'));
+    return {orderedDays,weekdays,columns,breaks,summary};
+  }
+  root.NICHI_CALENDAR = {apiVersion:1,berlinToday,plusDays,periodsFor,eventText,month,periodLabel,operatingLayout};
 })(typeof window === 'undefined' ? globalThis : window);
