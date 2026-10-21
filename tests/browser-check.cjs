@@ -158,12 +158,36 @@ for(const width of [320,390,1440]){
  for(const language of ['de','en','de']){
   await page.locator('[data-language='+language+']').click();
   const styles=await page.evaluate(()=>{const h=getComputedStyle(document.querySelector('.little-note h2')),status=getComputedStyle(document.querySelector('.status-line')),p=getComputedStyle(document.querySelector('#little-note-text'));return {font:h.fontFamily,statusFont:status.fontFamily,size:h.fontSize,weight:h.fontWeight,margin:h.marginBottom,body:p.fontFamily,siteBody:getComputedStyle(document.body).fontFamily};});
+  assert.equal(await page.locator('.status-strip a[href*="instagram.com"]').count(),0);
+  assert(!(await page.locator('body').innerText()).includes('Aktuelles auf Instagram'));
+  assert(!(await page.locator('body').innerText()).includes('Latest on Instagram'));
+  assert.equal(await page.locator('a[href="https://www.instagram.com/nichinichi_cafe_olef/"]').count(),2);
+  for(const selector of ['.recent-section__button','.site-footer a[data-event="click-instagram"]']){
+   const link=page.locator(selector);assert.equal(await link.getAttribute('href'),'https://www.instagram.com/nichinichi_cafe_olef/');
+   assert.equal(await link.getAttribute('target'),'_blank');assert.equal(await link.getAttribute('rel'),'noopener');
+   assert(await link.isVisible());
+  }
+  const calendarLink=page.locator('.mondstube-section__button');
+  assert.equal(await calendarLink.getAttribute('href'),'kalender/');assert.equal(await calendarLink.getAttribute('target'),null);assert.equal(await calendarLink.getAttribute('rel'),null);
+  assert.equal(await calendarLink.getAttribute('data-goatcounter-click'),'mondstube_calendar_click');
+  assert.equal((await calendarLink.locator('span[data-lang='+language+']').textContent()).trim(),language==='de'?'Monatskalender':'Monthly calendar');
+  assert.equal(await page.locator('.mondstube-section__small:visible').innerText(),language==='de'
+   ? 'An manchen Abenden ist der Innenraum für D&D, Themenabende oder kleine geschlossene Runden reserviert. Der Tagesstatus oben und der Monatskalender zeigen, was an diesem Abend möglich ist.'
+   : 'On some evenings, the indoor room is reserved for D&D, themed events or small private groups. Check the daily status above and the monthly calendar to see what is possible that evening.');
+  assert.equal(await page.locator('.hours-card > p[data-lang='+language+']').innerText(),language==='de'
+   ? 'Kurzfristige Änderungen, Ferien, Sonderabende und wetterbedingte Anpassungen stehen im Status oben und im Monatskalender.'
+   : 'Short-notice changes, holidays, special evenings and weather-related adjustments appear in the status above and in the monthly calendar.');
+  assert.equal(await page.locator('.status-strip__grid > a').count(),0);
   assert.equal(styles.font,styles.statusFont);assert.equal(styles.size,'18px');assert.equal(styles.weight,'400');assert.equal(styles.margin,'10px');assert.equal(styles.body,styles.siteBody);
   assert.equal(await page.locator('.before-card ul[data-lang='+language+'] li').nth(2).innerText(),language==='de'?'Take-away jederzeit möglich':'Take-away is always available');
   assert((await page.locator('#little-note-text').innerText()).includes('<b>Plain text</b>'));assert.equal(await page.locator('#little-note-text b').count(),0);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  for(const [section,selector] of [['status','.status-strip'],['mondstube','.mondstube-section']]){
+   await page.locator(selector).screenshot({path:path.join(output,'ow022-'+section+'-'+width+'-'+language+'.png')});
+  }
  }
  await page.locator('#little-note').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,'main-pr5-preserved-'+width+'.png')});
+ await page.locator('.mondstube-section__button').click();await page.waitForURL('**/kalender/');assert(await page.locator('#calendar-grid').isVisible());
 }
 await page.goto(base+'/admin');await page.locator('#little-note').fill('');await page.locator('#save-little-note').click();await page.waitForFunction(()=>document.querySelector('#little-note-result').textContent==='小筆記已清除。');
 await page.goto(base+'/');assert(await page.locator('#little-note').isHidden());
