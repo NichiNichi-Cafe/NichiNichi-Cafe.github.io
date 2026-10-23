@@ -81,7 +81,7 @@
     detail(snapshot.days.find(d=>d.key===selected));
     const weekly=el('calendar-weekly');weekly.replaceChildren();
     for(const item of config.weeklyActivities || [])append(weekly,'li',item[lang()]);
-    el('calendar-caption').value=[monthName(),...(config.weeklyActivities || []).map(a=>a[lang()]),t('Aktuelle Informationen:','Current information:')+' https://nichinichi-cafe.github.io/kalender/'].join('\n');
+    el('calendar-caption').value=[monthName(),...(config.weeklyActivities || []).map(a=>a[lang()]),t('Aktuelle Informationen:','Current information:')+' https://nichinichi-cafe.de/kalender/'].join('\n');
     el('export-ig').disabled=!complete;el('export-a4').disabled=!complete;
   }
   // Artwork uses the same frozen month model as the public calendar.
