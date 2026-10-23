@@ -5,6 +5,15 @@ const MAX_NOTE_LENGTH = 2000;
 const OPENING_PREFIX = "opening:";
 const SEAT_TTL = 3600;
 const ORIGIN = "https://nichinichi-cafe.github.io";
+const ALLOWED_ORIGINS = new Set([ORIGIN, "https://nichinichi-cafe.de", "https://www.nichinichi-cafe.de"]);
+function corsHeaders(request) {
+  const origin = request.headers.get("Origin") || ORIGIN;
+  return {
+    "Vary": "Origin",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    ...(ALLOWED_ORIGINS.has(origin) ? { "Access-Control-Allow-Origin": origin } : {})
+  };
+}
 const MAX_NOTICE_LENGTH = 220;
 
 const seatMessages = {
@@ -60,8 +69,7 @@ function json(data, status = 200, cors = false) {
   };
 
   if (cors) {
-    headers["Access-Control-Allow-Origin"] = ORIGIN;
-    headers["Access-Control-Allow-Methods"] = "GET, OPTIONS";
+    Object.assign(headers, corsHeaders(cors));
   }
 
   return new Response(JSON.stringify(data), { status, headers });
@@ -216,17 +224,14 @@ export default {
     if (request.method === "OPTIONS" && PUBLIC_GET_PATHS.has(url.pathname)) {
       return new Response(null, {
         status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": ORIGIN,
-          "Access-Control-Allow-Methods": "GET, OPTIONS"
-        }
+        headers: corsHeaders(request)
       });
     }
 
     // Backwards-compatible seat-status API.
     if (request.method === "GET" && url.pathname === "/status") {
       const value = await readSeatStatus(env);
-      return json({ active: Boolean(value), status: value }, 200, true);
+      return json({ active: Boolean(value), status: value }, 200, request);
     }
 
     if (request.method === "POST" && url.pathname === "/status") {
@@ -267,7 +272,7 @@ export default {
     // Daily / temporary notice API.
     if (request.method === "GET" && url.pathname === "/notice") {
       const value = await readNotice(env);
-      return json({ active: Boolean(value), notice: value }, 200, true);
+      return json({ active: Boolean(value), notice: value }, 200, request);
     }
 
     if (request.method === "POST" && url.pathname === "/notice") {
@@ -337,7 +342,7 @@ export default {
     // One-day opening-hours exceptions.
     if (request.method === "GET" && url.pathname === "/opening-exceptions") {
       const entries = await readOpeningExceptions(env);
-      return json({ exceptions: entries }, 200, true);
+      return json({ exceptions: entries }, 200, request);
     }
 
     if (request.method === "POST" && url.pathname === "/opening-exceptions") {
@@ -394,7 +399,7 @@ export default {
 
     // Independent, persistent note. Never part of reset-current or notice expiry.
     if (url.pathname === "/little-note") {
-      if (request.method === "GET") return json({ text: await readLittleNote(env) }, 200, true);
+      if (request.method === "GET") return json({ text: await readLittleNote(env) }, 200, request);
       if (request.method === "POST" || request.method === "DELETE") {
         if (!authorized(request, env)) return json({ error: "Unauthorized" }, 401);
         if (request.method === "DELETE") {
@@ -427,7 +432,7 @@ export default {
         notice: { active: Boolean(notice), notice },
         openingExceptions,
         littleNote
-      }, 200, true);
+      }, 200, request);
     }
 
     // Reset only live hints; scheduled opening exceptions are kept safe.
