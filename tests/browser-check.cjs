@@ -104,7 +104,7 @@ assert.deepEqual(headers.map(t=>t.text),['MO','DI','FR','SA','SO']);
 assert(headers[2].x-headers[1].x>headers[3].x-headers[2].x+20,'visible break between Tue and Fri');
 assert(ink.some(t=>t.text.includes('+ Sonderöffnung: 22.10.')));
 assert(ink.some(t=>t.text.includes('22.10.') && t.text.includes('Autumn evening TEST')));
-assert(ink.some(t=>t.text==='nichinichi-cafe.de/kalender/' && t.font.includes('28px')));
+assert(ink.some(t=>t.text==='nichinichi-cafe.github.io/kalender/' && t.font.includes('28px')));
 assert(ink.some(t=>t.text.startsWith('Café ·') && t.font.includes('30px')));
 assert.equal(await page.locator('.calendar-weekday').count(),5,'public calendar uses shared operating-day columns');
 assert(ink.some(t=>t.text==='D&D' && t.color==='#171310' && t.font.includes('28px')));
