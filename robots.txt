@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nichinichi-cafe.github.io/sitemap.xml
+Sitemap: https://nichinichi-cafe.de/sitemap.xml

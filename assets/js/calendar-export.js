@@ -24,7 +24,7 @@
       return [captionDate(day.key)+' · '+(day.closed?(de?'Geschlossen':'Closed'):shown.map(model.periodLabel).join(' · '))+
         shown.filter(p=>p.event).map(p=>'\n'+model.eventText(p.event,day.key,language).join('\n')).join('')];
     });
-    const caption=[name,...summary,...(config.weeklyActivities || []).map(a=>a[language]),...dateDetails,'https://nichinichi-cafe.github.io/kalender/'].join('\n\n');
+    const caption=[name,...summary,...(config.weeklyActivities || []).map(a=>a[language]),...dateDetails,'https://nichinichi-cafe.de/kalender/'].join('\n\n');
     function draw(format) {
       const square=format==='ig', canvas=document.createElement('canvas');
       canvas.width=square?1080:2480;canvas.height=square?1080:3508;
