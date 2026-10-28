@@ -1,0 +1,59 @@
+{
+  "name": "nichinichi-cupcake-test",
+  "account_id": "71b424868d00c0b5ee324a7c23099231",
+  "main": "cupcake-test-entry.mjs",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": [],
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "kv_namespaces": [],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "logpush": false,
+  "tail_consumers": [],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CUPCAKE_TEST",
+        "class_name": "CupcakeTestLedger"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "cupcake-test-v1",
+      "new_sqlite_classes": [
+        "CupcakeTestLedger"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "type": "Data",
+      "globs": [
+        "**/*.png"
+      ],
+      "fallthrough": true
+    }
+  ],
+  "env": {
+    "test": {
+      "name": "nichinichi-cupcake-test",
+      "kv_namespaces": [],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "CUPCAKE_TEST",
+            "class_name": "CupcakeTestLedger"
+          }
+        ]
+      },
+      "workers_dev": true,
+      "preview_urls": false,
+      "tail_consumers": []
+    }
+  }
+}
