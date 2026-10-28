@@ -5,7 +5,7 @@ const MAX_NOTE_LENGTH = 2000;
 const OPENING_PREFIX = "opening:";
 const SEAT_TTL = 3600;
 const ORIGIN = "https://nichinichi-cafe.github.io";
-const ALLOWED_ORIGINS = new Set([ORIGIN, "https://nichinichi-cafe.de", "https://www.nichinichi-cafe.de", "http://nichinichi-cafe.de", "http://www.nichinichi-cafe.de"]);
+const ALLOWED_ORIGINS = new Set([ORIGIN, "https://nichinichi-cafe.de", "https://www.nichinichi-cafe.de"]);
 function corsHeaders(request) {
   const origin = request.headers.get("Origin") || ORIGIN;
   return {
