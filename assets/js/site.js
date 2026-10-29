@@ -9,29 +9,12 @@
     const localizedAltImages = document.querySelectorAll("img[data-alt-de][data-alt-en]");
     const statusElement = document.getElementById("today-status");
     const nextElement = document.getElementById("next-opening");
-    const noticeBox = document.getElementById("public-notice");
-    const noticeText = document.getElementById("public-notice-text");
 
     let liveState = {
       openingExceptions: [],
-      notice: { active: false, notice: null },
       littleNote: ""
     };
 
-    function ensureDailyNoticeElement() {
-      if (!nextElement) return null;
-      let element = document.getElementById("live-daily-notice");
-      if (element) return element;
-
-      element = document.createElement("p");
-      element.id = "live-daily-notice";
-      element.className = "status-next";
-      element.hidden = true;
-      nextElement.insertAdjacentElement("afterend", element);
-      return element;
-    }
-
-    const dailyNoticeElement = ensureDailyNoticeElement();
 
     function readStoredLanguage() {
       try { return localStorage.getItem("nichinichi-language"); }
@@ -156,22 +139,6 @@
       return slot?.kind === "mondstube" ? "Mondstube" : "Café";
     }
 
-    function renderDailyNotice() {
-      if (!dailyNoticeElement) return;
-
-      const dynamicNotice = liveState.notice?.active ? liveState.notice.notice : null;
-      const dynamicText = dynamicNotice?.messages?.[currentLanguage];
-
-      if (dynamicText) {
-        dailyNoticeElement.textContent = "✦ " + dynamicText;
-        dailyNoticeElement.hidden = false;
-        return;
-      }
-
-      dailyNoticeElement.hidden = true;
-      dailyNoticeElement.textContent = "";
-    }
-
     function renderLittleNote() {
       const box = document.getElementById("little-note");
       const text = document.getElementById("little-note-text");
@@ -243,17 +210,6 @@
         statusElement.textContent = status;
         nextElement.textContent = next;
 
-        const publicNotice = config.publicNotice || {};
-        const notice = publicNotice[language];
-
-        if (noticeBox && noticeText && publicNotice.active && notice) {
-          noticeText.textContent = notice;
-          noticeBox.hidden = false;
-        } else if (noticeBox) {
-          noticeBox.hidden = true;
-        }
-
-        renderDailyNotice();
         renderLittleNote();
       } catch (_) {
         statusElement.textContent =
@@ -264,7 +220,6 @@
             ? "CAFÉ: MO–DI 12–14 Uhr · FR 12–14 Uhr · SA–SO 12–18 Uhr · MONDSTUBE: MO–DI & FR 18–20 Uhr"
             : "CAFÉ: MON–TUE 12:00–14:00 · FRI 12:00–14:00 · SAT–SUN 12:00–18:00 · MONDSTUBE: MON–TUE & FRI 18:00–20:00";
 
-        renderDailyNotice();
         renderLittleNote();
       }
     }
@@ -282,7 +237,6 @@
 
         liveState = {
           openingExceptions: data.openingExceptions,
-          notice: data.notice || { active: false, notice: null },
           littleNote: typeof data.littleNote === "string" ? data.littleNote : ""
         };
 

@@ -1,5 +1,13 @@
 # NichiNichi status Worker
 
+OW058: the Cockpit embeds the shared website schedule/model, generated with
+`node cloudflare/build-calendar-runtime.cjs`. Wrangler runs this build before
+deploying; the regression test checks the committed module against both sources.
+The public calendar uses versioned scripts to refresh old browser caches. Daily
+notices are retired: the UI and public rendering are removed, legacy reads return
+inactive, and authenticated publication returns 410. The existing delete/reset
+paths can still purge an old `daily-notice` key.
+
 `worker.mjs` starts from Captain's current production source (SHA-256
 `638b438a58405abedae073bd17639fbf536ab7ac23b4413c937f730da1d1f3b6`).
 The Worker serves the existing Traditional Chinese Cockpit at `/admin`.
