@@ -37,13 +37,7 @@ window.NICHI_SITE = {
     { weekday: 6, de: "Samstag · Story Table", en: "Saturday · Story Table" }
   ],
 
-  specialDates: [],
-
-  publicNotice: {
-    active: false,
-    de: "",
-    en: ""
-  }
+  specialDates: []
 };
 
 window.NICHI_BILINGUAL_HOURS = [

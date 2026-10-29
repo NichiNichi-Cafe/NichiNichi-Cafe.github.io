@@ -1,4 +1,5 @@
 import {handleCupcake} from "./cupcake.mjs";
+import calendarRuntime from "./calendar-runtime.mjs";
 export {CupcakeLedger} from "./cupcake.mjs";
 const SEAT_KEY = "seat-alert";
 const NOTICE_KEY = "daily-notice";
@@ -16,7 +17,7 @@ function corsHeaders(request) {
     ...(ALLOWED_ORIGINS.has(origin) ? { "Access-Control-Allow-Origin": origin } : {})
   };
 }
-const MAX_NOTICE_LENGTH = 220;
+
 
 const seatMessages = {
   "indoor-limited": {
@@ -30,29 +31,6 @@ const seatMessages = {
   full: {
     de: "Zurzeit sind alle verfügbaren Plätze belegt. Take-away ist möglich.",
     en: "All available seats are currently occupied. Take-away is available."
-  }
-};
-
-const noticePresets = {
-  "cake-drinks-only": {
-    de: "Heute gibt es nur Kuchen und Getränke.",
-    en: "Today we are serving cakes and drinks only."
-  },
-  "tagesteller-off": {
-    de: "Tagesteller ist heute nicht verfügbar.",
-    en: "Tagesteller is not available today."
-  },
-  "special-soldout": {
-    de: "Das Wochen-Special ist ausverkauft.",
-    en: "This week’s special is sold out."
-  },
-  "evening-private": {
-    de: "Heute Abend findet eine geschlossene Veranstaltung statt.",
-    en: "A private event is taking place this evening."
-  },
-  "garden-closed": {
-    de: "Der Garten ist heute wetterbedingt geschlossen.",
-    en: "The garden is closed today due to the weather."
   }
 };
 
@@ -152,19 +130,6 @@ async function readSeatStatus(env) {
 
   if (!Number.isFinite(value.expiresAt) || value.expiresAt <= Date.now()) {
     await env.STATUS_KV.delete(SEAT_KEY);
-    return null;
-  }
-
-  return value;
-}
-
-async function readNotice(env) {
-  const value = await env.STATUS_KV.get(NOTICE_KEY, "json");
-
-  if (!value || !value.messages) return null;
-
-  if (!Number.isFinite(value.expiresAt) || value.expiresAt <= Date.now()) {
-    await env.STATUS_KV.delete(NOTICE_KEY);
     return null;
   }
 
@@ -272,65 +237,13 @@ export default {
       return json({ ok: true });
     }
 
-    // Daily / temporary notice API.
+    // Retired: cached clients must never display or republish an old daily notice.
     if (request.method === "GET" && url.pathname === "/notice") {
-      const value = await readNotice(env);
-      return json({ active: Boolean(value), notice: value }, 200, request);
+      return json({ active: false, notice: null }, 200, request);
     }
-
     if (request.method === "POST" && url.pathname === "/notice") {
-      if (!authorized(request, env)) {
-        return json({ error: "Unauthorized" }, 401);
-      }
-
-      const body = await parseJson(request);
-      if (!body) return json({ error: "Invalid JSON" }, 400);
-
-      let messages;
-      let kind;
-      let preset = null;
-
-      if (body.preset && noticePresets[body.preset]) {
-        preset = body.preset;
-        kind = "preset";
-        messages = noticePresets[body.preset];
-      } else {
-        const text = String(body.text || "").trim();
-
-        if (!text || text.length > MAX_NOTICE_LENGTH) {
-          return json({ error: "Invalid notice text" }, 400);
-        }
-
-        kind = "custom";
-        messages = { de: text, en: text };
-      }
-
-      const now = Date.now();
-      const expiresAt = Number(body.expiresAt || now + 3600 * 1000);
-
-      if (!Number.isFinite(expiresAt) || expiresAt <= now) {
-        return json({ error: "Invalid expiry" }, 400);
-      }
-
-      const maxExpiry = now + 366 * 24 * 3600 * 1000;
-      if (expiresAt > maxExpiry) {
-        return json({ error: "Expiry too far in the future" }, 400);
-      }
-
-      const ttl = Math.max(60, Math.ceil((expiresAt - now) / 1000));
-      const value = {
-        kind,
-        preset,
-        messages,
-        updatedAt: now,
-        expiresAt
-      };
-
-      await env.STATUS_KV.put(NOTICE_KEY, JSON.stringify(value), {
-        expirationTtl: ttl
-      });
-
-      return json({ ok: true, notice: value });
+      if (!authorized(request, env)) return json({ error: "Unauthorized" }, 401);
+      return json({ error: "Daily notices retired" }, 410);
     }
 
     if (request.method === "DELETE" && url.pathname === "/notice") {
@@ -423,16 +336,15 @@ export default {
 
     // One public call the website can use for all live information.
     if (request.method === "GET" && url.pathname === "/state") {
-      const [seat, notice, openingExceptions, littleNote] = await Promise.all([
+      const [seat, openingExceptions, littleNote] = await Promise.all([
         readSeatStatus(env),
-        readNotice(env),
         readOpeningExceptions(env),
         readLittleNote(env)
       ]);
 
       return json({
         seat: { active: Boolean(seat), status: seat },
-        notice: { active: Boolean(notice), notice },
+        notice: { active: false, notice: null },
         openingExceptions,
         littleNote
       }, 200, request);
@@ -808,65 +720,7 @@ a.button{
   </section>
 
   <section class="section">
-    <div class="section-head">
-      <h2>今日公告</h2>
-      <p>可以直接按常用公告，也可以自己輸入短訊息。</p>
-    </div>
-
-    <p class="active" id="active-notice">正在讀取公告…</p>
-
-    <div class="button-grid">
-      <button class="action-button" data-preset="cake-drinks-only" type="button">
-        今天只供應蛋糕與飲料
-      </button>
-      <button class="action-button" data-preset="tagesteller-off" type="button">
-        今天沒有 Tagesteller
-      </button>
-      <button class="action-button" data-preset="special-soldout" type="button">
-        本週 Special 已售完
-      </button>
-      <button class="action-button" data-preset="evening-private" type="button">
-        今晚有包場活動
-      </button>
-      <button class="action-button" data-preset="garden-closed" type="button">
-        花園因天候關閉
-      </button>
-    </div>
-
-    <div class="field">
-      <label for="notice-custom">自由輸入公告</label>
-      <textarea
-        id="notice-custom"
-        maxlength="220"
-        placeholder="例如：Heute gibt es nur eine kleine Auswahl an warmen Speisen."></textarea>
-    </div>
-
-    <div class="field">
-      <label for="notice-expiry">公告有效時間</label>
-      <select id="notice-expiry">
-        <option value="60">60 分鐘</option>
-        <option value="endday">到今天 23:59</option>
-        <option value="24h">24 小時</option>
-        <option value="custom">自訂日期與時間…</option>
-      </select>
-    </div>
-
-    <div class="field hidden" id="notice-custom-expiry-wrap">
-      <label for="notice-custom-expiry">日期與時間</label>
-      <input id="notice-custom-expiry" type="datetime-local">
-    </div>
-
-    <button class="primary-button secondary-button" id="publish-custom" type="button">
-      發布自訂公告
-    </button>
-
-    <button class="secondary-button" id="clear-notice" type="button">
-      移除今日公告
-    </button>
-  </section>
-
-  <section class="section">
-    <div class="section-head"><h2>日日小筆記</h2><p>想寫再寫，沒有期限。清空後儲存即可隱藏，不會影響今日公告。</p></div>
+    <div class="section-head"><h2>日日小筆記</h2><p>想寫再寫，沒有期限。清空後儲存即可隱藏。</p></div>
     <div class="field"><label for="little-note">給訪客的小筆記（最多 2000 字元）</label><textarea id="little-note" maxlength="2000" disabled></textarea></div>
     <button class="primary-button secondary-button" id="save-little-note" type="button" disabled>儲存小筆記</button>
     <p class="small-note" id="little-note-result" aria-live="polite">正在讀取小筆記…</p>
@@ -909,8 +763,7 @@ a.button{
 
 </main>
 
-<script src="${ORIGIN}/assets/js/site-data.js?v=task004-r042"></script>
-<script src="${ORIGIN}/assets/js/calendar-data.js?v=task004-r042"></script>
+<script>${calendarRuntime.replaceAll("</script", "<\\/script")}</script>
 <script src="${ORIGIN}/assets/js/cupcake-metrics.js?v=cupcake-v1"></script>
 <script>
 (function(){
@@ -922,26 +775,14 @@ a.button{
   var tokenNote = document.getElementById("token-note");
   var result = document.getElementById("result");
   var activeSeat = document.getElementById("active-seat");
-  var activeNotice = document.getElementById("active-notice");
   var exceptionList = document.getElementById("exception-list");
   var openingDate = document.getElementById("opening-date");
-  var noticeExpiry = document.getElementById("notice-expiry");
-  var noticeCustomExpiryWrap = document.getElementById("notice-custom-expiry-wrap");
-  var noticeCustomExpiry = document.getElementById("notice-custom-expiry");
   var token = localStorage.getItem(tokenKey) || "";
 
   var seatLabels = {
     "indoor-limited": "室內座位不多",
     "garden-only": "室內滿席 · 花園有位",
     "full": "目前滿席"
-  };
-
-  var noticeLabels = {
-    "cake-drinks-only": "今天只供應蛋糕與飲料",
-    "tagesteller-off": "今天沒有 Tagesteller",
-    "special-soldout": "本週 Special 已售完",
-    "evening-private": "今晚有包場活動",
-    "garden-closed": "花園因天候關閉"
   };
 
   if(token){
@@ -988,28 +829,6 @@ a.button{
     }).format(date);
   }
 
-  function expiryTimestamp(){
-    var choice = noticeExpiry.value;
-    var now = new Date();
-
-    if(choice === "60") return Date.now() + 60*60*1000;
-    if(choice === "24h") return Date.now() + 24*60*60*1000;
-
-    if(choice === "endday"){
-      var end = new Date();
-      end.setHours(23,59,59,999);
-      return end.getTime();
-    }
-
-    if(choice === "custom"){
-      if(!noticeCustomExpiry.value) return null;
-      var custom = new Date(noticeCustomExpiry.value);
-      return Number.isNaN(custom.getTime()) ? null : custom.getTime();
-    }
-
-    return null;
-  }
-
   async function request(path,method,body){
     var options = {
       method:method || "GET",
@@ -1053,22 +872,6 @@ a.button{
         : "目前沒有座位提示。";
     }catch(error){
       activeSeat.textContent = "無法讀取座位狀態。";
-    }
-  }
-
-  async function loadNotice(){
-    try{
-      var data = await request("/notice","GET");
-      if(data.active){
-        var label = data.notice.preset
-          ? (noticeLabels[data.notice.preset] || data.notice.messages.de)
-          : data.notice.messages.de;
-        activeNotice.textContent = label + " · 有效至 " + formatTime(data.notice.expiresAt);
-      }else{
-        activeNotice.textContent = "目前沒有今日公告。";
-      }
-    }catch(error){
-      activeNotice.textContent = "無法讀取今日公告。";
     }
   }
 
@@ -1231,45 +1034,14 @@ a.button{
     }
   }
 
-  async function publishNotice(payload){
-    var expiresAt = expiryTimestamp();
-
-    if(!expiresAt || expiresAt <= Date.now()){
-      show("請選擇未來的到期時間。",true);
-      return;
-    }
-
-    payload.expiresAt = expiresAt;
-    show("正在發布…",false);
-
-    try{
-      await request("/notice","POST",payload);
-      show("今日公告已發布。",false);
-      await loadNotice();
-    }catch(error){
-      show(friendlyError(error),true);
-    }
-  }
-
-  async function clearNotice(){
-    show("正在更新…",false);
-    try{
-      await request("/notice","DELETE");
-      show("今日公告已移除。",false);
-      await loadNotice();
-    }catch(error){
-      show(friendlyError(error),true);
-    }
-  }
-
   async function resetCurrent(){
-    if(!confirm("確定要移除目前的座位提示和今日公告嗎？")) return;
+    if(!confirm("確定要移除目前的座位提示嗎？")) return;
 
     show("正在重設…",false);
     try{
       await request("/reset-current","POST",{});
       show("目前提示已重設。",false);
-      await Promise.all([loadSeat(),loadNotice()]);
+      await loadSeat();
     }catch(error){
       show(friendlyError(error),true);
     }
@@ -1315,26 +1087,6 @@ a.button{
 
   document.getElementById("save-special-hours").addEventListener("click",saveSpecialHours);
 
-  document.querySelectorAll("[data-preset]").forEach(function(button){
-    button.addEventListener("click",function(){
-      publishNotice({preset:button.dataset.preset});
-    });
-  });
-
-  noticeExpiry.addEventListener("change",function(){
-    noticeCustomExpiryWrap.classList.toggle("hidden",noticeExpiry.value !== "custom");
-  });
-
-  document.getElementById("publish-custom").addEventListener("click",function(){
-    var text = document.getElementById("notice-custom").value.trim();
-    if(!text){
-      show("請輸入公告內容。",true);
-      return;
-    }
-    publishNotice({text:text});
-  });
-
-  document.getElementById("clear-notice").addEventListener("click",clearNotice);
   document.getElementById("reset-current").addEventListener("click",resetCurrent);
 
   var littleNoteInput = document.getElementById("little-note");
@@ -1370,8 +1122,21 @@ a.button{
 
   var scheduleEntries = [], scheduleLoaded = false, loadedScheduleDate = "";
   var scheduleResult = document.getElementById("schedule-result");
+  var scheduleRequest = 0;
+  var hoursSummary = document.createElement("p");
+  hoursSummary.id="hours-24h-summary";hoursSummary.className="small-note";
+  document.getElementById("save-special-hours").before(hoursSummary);
+  function renderHoursSummary(){
+    hoursSummary.textContent="24 小時制："+[1,2].map(function(n){
+      var start=document.getElementById("hours-start-"+n).value,end=document.getElementById("hours-end-"+n).value;
+      return start && end ? "時段 "+n+" "+start+"–"+end : "";
+    }).filter(Boolean).join("；");
+  }
+  [1,2].forEach(function(n){["start","end"].forEach(function(part){document.getElementById("hours-"+part+"-"+n).addEventListener("input",renderHoursSummary);});});
   async function loadScheduleDate(){
+    var requestId=++scheduleRequest,key=openingDate.value;
     scheduleLoaded=false;
+    hoursSummary.textContent="";
     document.getElementById("save-special-hours").disabled=true;
     try{
       if(!window.NICHI_SITE || window.NICHI_SITE.calendarSchemaVersion !== 1 || !window.NICHI_CALENDAR || window.NICHI_CALENDAR.apiVersion !== 1) throw new Error("Missing or stale schedule scripts");
@@ -1381,7 +1146,7 @@ a.button{
       }
       var data=await request("/opening-exceptions","GET");
       if(!Array.isArray(data.exceptions))throw new Error("Invalid schedule");
-      var key=openingDate.value;
+      if(requestId!==scheduleRequest || openingDate.value!==key)return;
       if(key.length !== 10 || Number.isNaN(Date.parse(key + "T12:00:00Z")))throw new Error("Invalid date");
       var periods=window.NICHI_CALENDAR.periodsFor(key,window.NICHI_SITE,data.exceptions);
       if(!Array.isArray(periods) || periods.length>2)throw new Error("Unsupported schedule");
@@ -1395,22 +1160,20 @@ a.button{
         document.getElementById("event-description-"+n).value=period && period.event ? period.event.description : "";
       }
       loadedScheduleDate=key;scheduleLoaded=true;
+      renderHoursSummary();
       scheduleResult.textContent="已載入整日時間。請保留未變動的時段，再儲存。";
       document.getElementById("save-special-hours").disabled=false;
-    }catch(error){scheduleResult.textContent="無法載入日期／固定週表。請重新載入；不會儲存空白預設值。";}
+    }catch(error){if(requestId!==scheduleRequest)return;scheduleResult.textContent="無法載入日期／固定週表。請重新載入；不會儲存空白預設值。";console.error("Schedule load failed:",error.message);}
   }
   openingDate.addEventListener("change",loadScheduleDate);
   document.getElementById("reload-schedule").addEventListener("click",loadScheduleDate);
   openingDate.value = datePlusDays(0);
   loadScheduleDate();
 
-  var oneHourLater = new Date(Date.now()+60*60*1000);
-  noticeCustomExpiry.value =
-    localDateString(oneHourLater) + "T" + pad(oneHourLater.getHours()) + ":" + pad(oneHourLater.getMinutes());
 
   var cupcakeResult=document.getElementById('cupcake-result');
   function syncCupcakeOwner(){
-    try{var origin=new URL(document.querySelector('script[src*="site-data.js"]').src).origin;var syncKey='nichinichi-cupcake-owner-sync-v1:'+origin;
+    try{var origin=new URL("${ORIGIN}").origin;var syncKey='nichinichi-cupcake-owner-sync-v1:'+origin;
       if(localStorage.getItem(syncKey)==='1')return;localStorage.setItem(syncKey,'1');
       location.replace(origin+'/cupcake-browser.html?return='+encodeURIComponent(location.origin+'/admin'));
     }catch{}
@@ -1451,7 +1214,7 @@ a.button{
     }catch(error){verificationResult.textContent=error.message;}
   };
 
-  Promise.all([loadSeat(),loadNotice(),loadExceptions()]);
+  Promise.all([loadSeat(),loadExceptions()]);
 })();
 <\/script>
 </body>

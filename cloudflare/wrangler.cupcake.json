@@ -2,6 +2,9 @@
   "name": "nichinichi-status",
   "account_id": "71b424868d00c0b5ee324a7c23099231",
   "main": "worker.mjs",
+  "build": {
+    "command": "node cloudflare/build-calendar-runtime.cjs"
+  },
   "compatibility_date": "2026-07-29",
   "compatibility_flags": [],
   "workers_dev": true,

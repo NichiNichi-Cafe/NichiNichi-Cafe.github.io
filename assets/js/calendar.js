@@ -4,6 +4,10 @@
   const el = id => document.getElementById(id);
   const lang = () => document.documentElement.lang === 'en' ? 'en' : 'de';
   const t = (de,en) => lang() === 'de' ? de : en;
+  if (!model || model.apiVersion !== 1 || !config || config.calendarSchemaVersion !== 1) {
+    el('calendar-message').textContent=t('Kalenderskripte nicht geladen. Bitte die Seite erneut laden.','Calendar scripts did not load. Please reload the page.');
+    return;
+  }
   const today = model.berlinToday();
   let year = Number(today.slice(0,4)), month = Number(today.slice(5,7))-1;
   let selected = today, exceptions = [], ready = false, snapshot;
