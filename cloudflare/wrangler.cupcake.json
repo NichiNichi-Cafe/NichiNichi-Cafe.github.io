@@ -1,0 +1,79 @@
+{
+  "name": "nichinichi-status",
+  "account_id": "71b424868d00c0b5ee324a7c23099231",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": [],
+  "workers_dev": true,
+  "preview_urls": false,
+  "keep_vars": true,
+  "kv_namespaces": [
+    {
+      "binding": "STATUS_KV",
+      "id": "b28adb5e930749b5b696228923083ec8"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "redact_query_string": false,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "logpush": false,
+  "tail_consumers": [],
+  "vars": {
+    "CUPCAKE_ENABLED": "false",
+    "CUPCAKE_PROBABILITY": "0.02"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CUPCAKE_LEDGER",
+        "class_name": "CupcakeLedger"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "good-day-cupcake-v1",
+      "new_sqlite_classes": [
+        "CupcakeLedger"
+      ]
+    }
+  ],
+  "env": {
+    "preview": {
+      "name": "nichinichi-cupcake-integration-preview",
+      "kv_namespaces": [
+        {
+          "binding": "STATUS_KV"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "CUPCAKE_LEDGER",
+            "class_name": "CupcakeLedger"
+          }
+        ]
+      },
+      "tail_consumers": [],
+      "vars": {
+        "CUPCAKE_ENABLED": "true",
+        "CUPCAKE_PROBABILITY": "1",
+        "CUPCAKE_TEST_MODE": "true",
+        "CUPCAKE_PREVIEW_ORIGIN": "http://127.0.0.1:8794"
+      }
+    }
+  }
+}
