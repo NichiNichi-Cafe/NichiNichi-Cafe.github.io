@@ -1,0 +1,6 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>NichiNichi</title><script>
+// A preference only. This grants no management access and carries no credential.
+try{localStorage.setItem('nichinichi-cupcake-owner-skip','1');}catch{}
+const target=new URLSearchParams(location.search).get('return');
+try{const u=new URL(target);const allowed=['https://nichinichi-status.fangphaedra.workers.dev','https://nichinichi-cupcake-integration-test.fangphaedra.workers.dev','http://127.0.0.1:8795','http://127.0.0.1:8810'];if(allowed.includes(u.origin)&&u.pathname==='/admin'){u.search='';u.hash='';location.replace(u.href);}}catch{}
+</script></html>

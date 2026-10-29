@@ -1,3 +1,5 @@
+import {handleCupcake} from "./cupcake.mjs";
+export {CupcakeLedger} from "./cupcake.mjs";
 const SEAT_KEY = "seat-alert";
 const NOTICE_KEY = "daily-notice";
 const NOTE_KEY = "little-note";
@@ -220,6 +222,7 @@ async function parseJson(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if(url.pathname.startsWith("/cupcake/"))return handleCupcake(request,env,authorized(request,env));
 
     if (request.method === "OPTIONS" && PUBLIC_GET_PATHS.has(url.pathname)) {
       return new Response(null, {
@@ -450,7 +453,7 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/admin") {
-      return new Response(ADMIN_HTML, {
+      return new Response(env.CUPCAKE_PREVIEW_ORIGIN ? ADMIN_HTML.replaceAll(ORIGIN,env.CUPCAKE_PREVIEW_ORIGIN.split(",")[0]) : ADMIN_HTML, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
@@ -887,10 +890,28 @@ a.button{
 
     <p class="result" id="result" aria-live="polite"></p>
   </section>
+<section class="card" id="cupcake-panel" aria-labelledby="cupcake-heading">
+ <h2 id="cupcake-heading">Good Day Cupcake</h2>
+ <p class="small-note">只處理已發出的卡，不需要每天計數。客人出示短碼後，核對狀態再按「已兌換」。</p>
+ <div class="form-row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+  <select id="cupcake-filter" aria-label="蛋糕卡狀態"><option value="unredeemed">未兌換</option><option value="redeemed">已兌換</option><option value="expired">已過期</option><option value="all">全部</option></select>
+  <input id="cupcake-search" aria-label="蛋糕卡短碼" placeholder="MOND-27／mond27" style="min-width:0;max-width:100%">
+  <button id="cupcake-find" type="button">查找</button><button id="cupcake-reload" type="button">重新讀取</button>
+ </div>
+ <p id="cupcake-result" class="result" role="status"></p><div id="cupcake-cards"></div>
+ <details><summary>上線驗證（不占客人名額）</summary>
+  <button id="cupcake-verify-start" type="button">建立驗證卡</button>
+  <button id="cupcake-verify-redeem" type="button">核銷驗證卡並檢查防重複</button>
+  <p id="cupcake-verify-result" role="status"></p>
+  <iframe id="cupcake-verify-frame" title="Good Day Cupcake 驗證卡" hidden style="width:100%;height:760px;border:1px solid #ddd"></iframe>
+ </details>
+</section>
+
 </main>
 
 <script src="${ORIGIN}/assets/js/site-data.js?v=task004-r042"></script>
 <script src="${ORIGIN}/assets/js/calendar-data.js?v=task004-r042"></script>
+<script src="${ORIGIN}/assets/js/cupcake-metrics.js?v=cupcake-v1"></script>
 <script>
 (function(){
   "use strict";
@@ -1386,6 +1407,49 @@ a.button{
   var oneHourLater = new Date(Date.now()+60*60*1000);
   noticeCustomExpiry.value =
     localDateString(oneHourLater) + "T" + pad(oneHourLater.getHours()) + ":" + pad(oneHourLater.getMinutes());
+
+  var cupcakeResult=document.getElementById('cupcake-result');
+  function syncCupcakeOwner(){
+    try{var origin=new URL(document.querySelector('script[src*="site-data.js"]').src).origin;var syncKey='nichinichi-cupcake-owner-sync-v1:'+origin;
+      if(localStorage.getItem(syncKey)==='1')return;localStorage.setItem(syncKey,'1');
+      location.replace(origin+'/cupcake-browser.html?return='+encodeURIComponent(location.origin+'/admin'));
+    }catch{}
+  }
+  async function cupcakeRequest(path,method,body){
+    if(!token)throw new Error('請先輸入既有管理密碼。');
+    var r=await fetch(path,{method:method||'GET',cache:'no-store',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+    var data=await r.json();if(!r.ok){var error=new Error(r.status===401?'管理驗證未通過。':data.error==='redeemed'?'這張卡已兌換。':data.error==='expired'?'這張卡已過期。':data.error==='not_found'?'查無此碼。':'未完成操作，請重新讀取。');error.status=r.status;throw error;}return data;
+  }
+  async function loadCupcakes(){
+    if(!token){cupcakeResult.textContent='請先輸入既有管理密碼。';return;}
+    try{var query='?filter='+encodeURIComponent(document.getElementById('cupcake-filter').value)+'&code='+encodeURIComponent(document.getElementById('cupcake-search').value);
+      var data=await cupcakeRequest('/cupcake/admin/cards'+query);syncCupcakeOwner();var list=document.getElementById('cupcake-cards');list.replaceChildren();
+      if(!data.cards.length)list.textContent='查無此碼／沒有符合的紀錄。';
+      data.cards.forEach(function(card){var article=document.createElement('article');article.style.cssText='padding:14px 0;border-bottom:1px solid #ddd;overflow-wrap:anywhere';var p=document.createElement('p');p.textContent=(card.test?'TEST · ':'')+card.code+' · '+({unredeemed:'未兌換',redeemed:'已兌換',expired:'已過期'}[card.status])+' · 到期 '+card.expiresDay;article.append(p);
+        if(card.status==='unredeemed'){var button=document.createElement('button');button.type='button';button.textContent='已兌換';button.onclick=async function(){button.disabled=true;try{var result=await cupcakeRequest('/cupcake/admin/redeem','POST',{code:card.code});cupcakeResult.textContent=card.code+' 已兌換。';if(!result.test)window.NICHI_CUPCAKE_METRIC?.('egg_redeemed');await loadCupcakes();}catch(error){cupcakeResult.textContent=error.message;if(error.status===409)await loadCupcakes();else button.disabled=false;}};article.append(button);}list.append(article);
+      });
+    }catch(error){cupcakeResult.textContent=error.message;}
+  }
+  document.getElementById('cupcake-find').addEventListener('click',loadCupcakes);
+  document.getElementById('cupcake-reload').addEventListener('click',loadCupcakes);
+  document.getElementById('cupcake-filter').addEventListener('change',loadCupcakes);
+  document.getElementById('save-token').addEventListener('click',function(){setTimeout(loadCupcakes,0);});
+  loadCupcakes();
+  var verificationRun='',verificationCode='',verificationTimer;
+  var verificationResult=document.getElementById('cupcake-verify-result');
+  document.getElementById('cupcake-verify-start').onclick=async function(){
+    try{var started=await cupcakeRequest('/cupcake/admin/verification','POST',{});verificationRun=started.run;verificationCode='';
+      var siteOrigin=new URL(document.querySelector('script[src*="site-data.js"]').src).origin;
+      var frame=document.getElementById('cupcake-verify-frame');frame.src=siteOrigin+'/jeden-tag-neu.html?cupcake-verification='+encodeURIComponent(verificationRun);frame.hidden=false;verificationResult.textContent='正在讀取驗證卡；不占客人名額。';
+      clearInterval(verificationTimer);verificationTimer=setInterval(async function(){try{var cards=await cupcakeRequest('/cupcake/verify/'+verificationRun+'/cupcake/admin/cards?filter=all');if(cards.cards.length){verificationCode=cards.cards[0].code;verificationResult.textContent='驗證卡 '+verificationCode+' · '+cards.cards[0].status;clearInterval(verificationTimer);}}catch(error){verificationResult.textContent=error.message;clearInterval(verificationTimer);}},1500);
+    }catch(error){verificationResult.textContent=error.message;}
+  };
+  document.getElementById('cupcake-verify-redeem').onclick=async function(){
+    if(!verificationRun||!verificationCode){verificationResult.textContent='請先建立並讀到驗證卡。';return;}
+    try{var route='/cupcake/verify/'+verificationRun+'/cupcake/admin/redeem';await cupcakeRequest(route,'POST',{code:verificationCode});
+      try{await cupcakeRequest(route,'POST',{code:verificationCode});verificationResult.textContent='異常：重複核銷未被拒絕。';}catch(error){verificationResult.textContent=error.status===409?'驗證通過：'+verificationCode+' 已核銷，重複核銷已拒絕；不占客人名額。':error.message;}
+    }catch(error){verificationResult.textContent=error.message;}
+  };
 
   Promise.all([loadSeat(),loadNotice(),loadExceptions()]);
 })();

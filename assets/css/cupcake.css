@@ -1,0 +1,47 @@
+/* Content-driven layout: enlarged text grows the card; artwork owns its own row. */
+#cupcake-card {
+  container-type:inline-size;
+  position:fixed;inset:0;margin:auto;
+  width:min(600px,calc(100% - 24px));height:fit-content;
+  max-width:calc(100% - 24px);max-height:calc(100dvh - 24px);
+  padding:0;border:1px solid #92957d;border-radius:12px;
+  box-sizing:border-box;overflow:auto;overscroll-behavior:contain;
+  background:#f5f0e5 url('../images/good-day-cupcake.png') 42% 22% / 600% auto;color:#15150f;
+  box-shadow:0 16px 70px #28241444;
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(16px,3.9vw,22px);line-height:1.6;
+}
+#cupcake-card::backdrop{background:#252b2255}
+#cupcake-card[hidden],#cupcake-recover[hidden],#cupcake-card .cupcake-test[hidden]{display:none!important}
+#cupcake-card .cupcake-toolbar {
+  position:sticky;top:0;z-index:2;display:flex;align-items:center;
+  justify-content:flex-end;flex-wrap:wrap;gap:.35em;
+  padding:.4em .65em;background:#f5f0e5;border-bottom:1px solid #d5d2c1;
+}
+#cupcake-card .cupcake-toolbar button {
+  min-width:44px;min-height:44px;margin:0;padding:.25em .45em;
+  border:1px solid transparent;border-radius:3px;background:transparent;
+  font:inherit;line-height:1.3;color:inherit;cursor:pointer;
+}
+#cupcake-card .cupcake-toolbar button[aria-pressed=true]{border-bottom-color:#515843}
+#cupcake-card #cupcake-close{margin-inline-start:.4em;font-family:Arial,sans-serif;font-size:1.4em}
+#cupcake-card .cupcake-content {
+  display:flex;flex-direction:column;gap:1em;
+  margin:12px;padding:clamp(16px,5cqw,30px);
+  border:1px solid #a3a58d;border-radius:6px;
+}
+#cupcake-card .cupcake-kicker{display:flex;align-items:center;gap:.8em;font-size:.7em;letter-spacing:.2em;overflow-wrap:anywhere}
+#cupcake-card .cupcake-kicker::before{content:'';flex:0 0 3em;height:3em;background:url('../images/good-day-cupcake.png') 7% 10% / 666.667% auto no-repeat}
+#cupcake-card h2{margin:0;font:inherit;font-size:1.9em;font-weight:400;letter-spacing:-.045em;line-height:1.15;overflow-wrap:normal}
+#cupcake-card p,#cupcake-card small{margin:0;color:inherit}
+#cupcake-card #cupcake-copy{font:inherit;line-height:1.6}
+#cupcake-card #cupcake-copy p{margin:0;font:inherit;white-space:pre-line}
+#cupcake-card #cupcake-copy-invitation:not(:empty){margin-top:1.25em}
+#cupcake-card .cupcake-art{position:relative;aspect-ratio:2.5;overflow:hidden;flex-shrink:0}
+#cupcake-card .cupcake-art img{position:absolute;top:0;left:0;display:block;width:100%;max-width:none;height:auto;margin:0;transform:translateY(-49%)}
+#cupcake-card .cupcake-test{font-size:.65em;letter-spacing:.14em;text-align:center;line-height:1.5;overflow-wrap:anywhere}
+#cupcake-card #cupcake-code{align-self:center;max-width:100%;box-sizing:border-box;padding:.5em .9em;border:1px solid #828873;font-size:1.15em;letter-spacing:.12em;line-height:1.4;text-align:center;overflow-wrap:anywhere;color:#515843}
+#cupcake-card #cupcake-expiry{font-size:.75em;line-height:1.6;text-align:center;overflow-wrap:anywhere}
+#cupcake-card .cupcake-status{display:flex;flex-direction:column;gap:.5em;padding-top:.5em;border-top:1px solid #d5d2c1;text-align:center}
+#cupcake-card #cupcake-clock,#cupcake-card #cupcake-sync{display:block;font-size:.65em;line-height:1.5;color:#555a4b;overflow-wrap:anywhere}
+#cupcake-recover{position:fixed;right:18px;bottom:18px;z-index:40;padding:10px 14px;max-width:calc(100% - 36px);font-family:Georgia,serif;border:1px solid #8c927d;background:#f1ecdf;color:#424b36;border-radius:3px;cursor:pointer}
