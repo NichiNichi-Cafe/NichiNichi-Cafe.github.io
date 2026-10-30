@@ -89,13 +89,13 @@
           const baseline=config.weeklyHours?.[weekday] || [];
           // Do not repeat unchanged daytime hours already printed in the header.
           const changed=day.periods.filter(p=>p.event || !baseline.some(b=>b.kind===p.kind && b.start===p.start && b.end===p.end));
-          let labels=changed.flatMap(p=>[p.event?(p.event.type==='dnd'?'D&D':'Event'):p.kind==='mondstube'?'Mondstube':'Café',range(p)]);
+          let labels=changed.flatMap(p=>p.event?.type==='dnd'?['DND']:[p.event?'Event':p.kind==='mondstube'?'Mondstube':'Café',range(p)]);
           ctx.font='bold 28px sans-serif';
           if(labels.length*28>cellH-42 || labels.some(label=>ctx.measureText(label).width>available)){
             // Fixed square images cannot fit unlimited exceptions. Keep type readable,
-            // refer to full date detail/caption, and list dense dates explicitly on A4.
+            // refer to the full date detail and caption.
             denseDays.push(day);
-            labels=[events.some(p=>p.event.type==='dnd')?'D&D':de?'Info':'Change','Details'];
+            labels=[events.some(p=>p.event.type==='dnd')?'DND':de?'Info':'Change','Details'];
           }
           labels.forEach((label,i)=>{
             const ey=cy+cellH-4-28*(labels.length-i);
@@ -105,24 +105,17 @@
         }
       }
       let fy=bottom+20;
-      const legend=[[colors.cafe,'Café'],[colors.evening,'Mondstube']];
+      const legend=[];
       if(snapshot.days.some(d=>columns.includes(dayWeekday(d)) && d.closed))legend.push([colors.closed,de?'Zu':'Closed']);
       let lx=48;
       legend.forEach(([color,label])=>{ctx.fillStyle=color;ctx.fillRect(lx,fy+4,22,22);text(label,lx+30,fy,label==='Zu'?'30px Georgia':'26px sans-serif');ctx.font='26px sans-serif';lx+=ctx.measureText(label).width+80;});
       if(square)hintLines.forEach((line,i)=>text(line,48,fy+38+i*32,'28px sans-serif'));
       if(!square){
-        fy+=49;
-        for(const item of config.weeklyActivities || []){text(item[language],48,fy,'21px sans-serif');fy+=30;}
-        if(snapshot.days.some(day=>day.hasEvent) || denseDays.length || omittedOpenDays.length){
-          fy+=16;
-          text(de?'Besondere Abende':'Special evenings',48,fy,'bold 24px Georgia');fy+=38;
-          // A4 is a noticeboard overview. Full, unbounded event prose lives at the printed URL.
-          const compact=snapshot.days.flatMap(d=>d.periods.filter(p=>p.event || denseDays.includes(d) || omittedOpenDays.includes(d)).map(p=>`${d.day}.${d.key.slice(5,7)}. · ${p.event?.title || (p.event?.type==='dnd'?'D&D':p.kind==='mondstube'?'Mondstube':'Café')} · ${p.start}–${p.end}`));
-          for(const row of compact){
-            const wrapped=lines(row,984,'20px sans-serif');
-            if(fy+wrapped.length*27>height-100){text(de?'Weitere Details online (Adresse unten).':'More details online (address below).',48,fy,'18px sans-serif');break;}
-            wrapped.forEach(line=>{text(line,48,fy,'20px sans-serif');fy+=27;});
-          }
+        fy+=16;
+        for(const item of config.weeklyActivities || []){
+          const wrapped=lines(item[language],984,'bold 30px sans-serif');
+          for(const line of wrapped){text(line,48,fy,'bold 30px sans-serif');fy+=40;}
+          fy+=12;
         }
       }
       if(!square)text(de?'Details & aktuelle Hinweise':'Details & current updates',48,height-80,'28px sans-serif');
@@ -132,3 +125,4 @@
     return {draw,caption};
   };
 })();
+
