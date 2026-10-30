@@ -119,7 +119,7 @@
         }
       }
       if(!square)text(de?'Details & aktuelle Hinweise':'Details & current updates',48,height-80,'28px sans-serif');
-      text('nichinichi-cafe.github.io/kalender/',48,height-38,'28px sans-serif');
+      text('nichinichi-cafe.de/kalender/',48,height-38,'28px sans-serif');
       return canvas;
     }
     return {draw,caption};
