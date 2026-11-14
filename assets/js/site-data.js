@@ -33,8 +33,7 @@ window.NICHI_SITE = {
   },
 
   weeklyActivities: [
-    { weekday: 2, de: "Dienstag · Mother–Daughter Day", en: "Tuesday · Mother–Daughter Day" },
-    { weekday: 6, de: "Samstag · Story Table", en: "Saturday · Story Table" }
+    { weekday: 2, de: "Dienstags mit Mama", en: "Tuesdays with Mom" }
   ],
 
   specialDates: []
